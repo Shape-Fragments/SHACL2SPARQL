@@ -1,0 +1,6 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:subjto :the
+    (:a :b [ sh:inversePath :c ] :d) .
+        

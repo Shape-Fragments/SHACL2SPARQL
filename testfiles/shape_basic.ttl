@@ -1,0 +1,11 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:shape a sh:NodeShape ;
+    sh:property :oner .
+
+:oner a sh:PropertyShape ;
+    sh:path :r ;
+    sh:minCount 1 .
+            
+    

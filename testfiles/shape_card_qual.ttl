@@ -1,0 +1,23 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:shape1 a sh:PropertyShape ;
+    sh:path :p1 ;
+    sh:minCount 3 ;
+    sh:maxCount 6 .
+
+:shape a sh:NodeShape ;
+    sh:property :shape2 ;
+    sh:property :shape3 .
+
+:shape2 a sh:PropertyShape ;
+    sh:path :p2 ;
+    sh:qualifiedValueShape :shape4 ;
+    sh:qualifiedMinCount 4 ;
+    sh:qualifiedMaxCount 8 .
+
+:shape3 a sh:PropertyShape ;
+    sh:path :p3 ;
+    sh:qualifiedValueShape :shape5 ;
+    sh:qualifiedValueShapesDisjoint true ;
+    sh:qualifiedMinCount 7 .

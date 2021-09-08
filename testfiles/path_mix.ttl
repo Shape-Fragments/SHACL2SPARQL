@@ -1,0 +1,15 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:subjto :the (
+        :a
+        :b
+        [ sh:inversePath
+            [ sh:alternativePath (
+                    :c
+                    [ sh:zeroOrMorePath :d ]
+                    :e
+                    [ sh:oneOrMorePath :f ]
+                    ) ] ]
+        [ sh:zeroOrOnePath :g ] ) .
+        

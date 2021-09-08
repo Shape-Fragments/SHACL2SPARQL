@@ -1,0 +1,9 @@
+
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:shape a sh:NodeShape ;
+    sh:property [
+        sh:path :r1 ;
+        sh:hasValue 1 ;
+        ] .

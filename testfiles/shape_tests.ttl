@@ -1,0 +1,16 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:shape a sh:NodeShape ;
+    sh:datatype xsd:string ;
+    sh:class :class1 ;
+    sh:nodeKind sh:IRI ;
+    sh:minExclusive 1 ;
+    sh:maxExclusive 10 ;
+    sh:minInclusive 1 ;
+    sh:maxInclusive 10 ;
+    sh:minLength 1 ;
+    sh:maxLength 10 ;
+    sh:pattern "^B" ;
+    sh:flags "i" .

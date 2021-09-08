@@ -1,0 +1,20 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:shape a sh:NodeShape ;
+    sh:hasValue :val1 ;
+    sh:in (:val2 :val3 :val4) ;
+    sh:closed true ;
+    sh:ignoredProperties ( :p1 :p2 ) ;
+    sh:property :pshape1 ;
+    sh:property :pshape2 .
+    
+:pshape1 a sh:PropertyShape ;
+    sh:path :p3 ;
+    sh:hasValue :val5 .
+
+:pshape2 a sh:PropertyShape ;
+    sh:path (:p4 :p5) ;
+    sh:hasValue :val6 .
+    
+    
