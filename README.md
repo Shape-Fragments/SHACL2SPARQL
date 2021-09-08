@@ -6,5 +6,5 @@ It provides two interesting features:
 - translating the SANode tree to SPARQL queries according to the shape fragments specification.
 
 # Dependencies
-Create a python 3 virtual environment and install =requirements.txt= with pip.
+Create a python 3 virtual environment and install `requirements.txt` with pip.
 
