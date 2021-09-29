@@ -1,6 +1,6 @@
 from algebra import SANode, Op
 from pathalg import PANode, POp
-from rdflib.namespace import SH, RDF
+from rdflib.namespace import SH
 
 
 def _build_query(body):
@@ -47,61 +47,61 @@ def _build_closed_query(properties):
 def _build_disjoint_query(path1, path2):
     return _build_query(f'''
 {{
-?v {path1} ?o1
-FILTER NOT EXISTS {{ ?v {path1} ?o2 . ?v {path2} ?o2 }}
+  ?v {path1} ?o1
+  FILTER NOT EXISTS {{ ?v {path1} ?o2 . ?v {path2} ?o2 }}
 }} UNION {{
-?v {path2} ?o3
-FILTER NOT EXISTS {{
-?v {path1} ?o4 .
-?v {path2} ?o4 }}
+  ?v {path2} ?o3
+  FILTER NOT EXISTS {{
+    ?v {path1} ?o4 .
+    ?v {path2} ?o4 }}
 }} UNION {{
-?s ?q1 ?v FILTER NOT EXISTS {{ ?v ?q4 ?o9 }}
+  ?s ?q1 ?v FILTER NOT EXISTS {{ ?v ?q4 ?o9 }}
 }} UNION {{
-?v ?q2 ?o5 FILTER NOT EXISTS {{ ?v {path1} ?o6 }}
+  ?v ?q2 ?o5 FILTER NOT EXISTS {{ ?v {path1} ?o6 }}
 }} UNION {{
-?v ?q3 ?o7 FILTER NOT EXISTS {{ ?v  {path2}  ?o8 }}
+  ?v ?q3 ?o7 FILTER NOT EXISTS {{ ?v  {path2}  ?o8 }}
 }}''')
 
 
 def _build_equality_query(path1, path2):
     return _build_query(f'''
-{{ ?v {path1} ?o1
-FILTER NOT EXISTS {{ ?v {path1}  ?o2
-FILTER NOT EXISTS {{ ?v {path2}  ?o2 }} }} .
-{{ ?v {path2} ?o1
-FILTER NOT EXISTS {{ ?v {path2} ?o3
-FILTER NOT EXISTS {{ ?v {path1} ?o3 }} }} }}
+{{?v {path1} ?o1
+  FILTER NOT EXISTS {{ ?v {path1}  ?o2
+    FILTER NOT EXISTS {{ ?v {path2}  ?o2 }} }} .
+  {{?v {path2} ?o1
+    FILTER NOT EXISTS {{ ?v {path2} ?o3
+      FILTER NOT EXISTS {{ ?v {path1} ?o3 }} }} }}
 }} UNION {{
-?s ?q1 ?v FILTER NOT EXISTS {{ ?v ?q4 ?o8 }} .
+  ?s ?q1 ?v FILTER NOT EXISTS {{ ?v ?q4 ?o8 }} .
 }} UNION {{
-?v ?q2 ?o4 FILTER NOT EXISTS {{ ?v {path1} ?o5 }} .
-?v ?q3 ?o6 FILTER NOT EXISTS {{ ?v {path2} ?o7 }} }}
+  ?v ?q2 ?o4 FILTER NOT EXISTS {{ ?v {path1} ?o5 }} .
+  ?v ?q3 ?o6 FILTER NOT EXISTS {{ ?v {path2} ?o7 }} }}
 ''')
 
 
 def _build_forall_query(path, shape):
     return _build_negate(
-        _build_query(f'?v {path} ?o'
-                     + '. { SELECT ?v AS ?o WHERE { '
-                     + _build_negate(shape) + '}}'))
+        _build_query(f'''
+?v {path} ?o.
+{{
+  SELECT ?v AS ?o
+  WHERE {{ {_build_negate(shape)} }}
+}}
+'''))
 
 
 def _build_geq_query(num, path, shape):
-    '''
-    SELECT ?v WHERE {
-    ?v :p ?o .
-    { SELECT (?v AS ?o) WHERE {?v :q ?o1} }
-    } GROUP BY ?v HAVING (COUNT(?o) >= 2)
-    '''
-    return _build_query(f'?v {path} ?o .'
-                        + f'{{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}')
-    + f'GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
+    return _build_query(f'''
+?v {path} ?o .
+{{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
+''') + f'GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
 
 def _build_leq_query(num, path, shape):
-    return _build_query(f'?v {path} ?o .'
-                        + f'{{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}')
-    + f'GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+    return _build_query(f'''
+?v {path} ?o .
+{{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
+''') + f'GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
 
 
 def _build_lt_query(num, path, shape):
@@ -113,7 +113,7 @@ def _build_lte_query(num, path, shape):
 
 
 def _build_hasvalue_query(value):
-    return _build_query('BIND ( ?v AS ' + str(value) + ')')
+    return _build_query(f'BIND ( ?v AS {str(value)} )')
 
 
 def _build_uniquelang_query(path):
@@ -122,50 +122,51 @@ def _build_uniquelang_query(path):
 
 def _build_test_query(test_type, parameter):
     if test_type == 'datatype':
-        return _build_query(f'{{ {_build_all_query()} }}'
-                            + f'FILTER (datatype(?v) = {str(parameter)} )')
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER (datatype(?v) = {str(parameter)})')
     if test_type == 'nodekind':
         if parameter == SH.IRI:
-            return _build_query('{' + _build_all_query()
-                                + '} FILTER isIRI(?v)')
+            return _build_query(
+                f'{{ {_build_all_query()} }} FILTER isIRI(?v)')
         if parameter == SH.Literal:
-            return _build_query('{' + _build_all_query()
-                                + '} FILTER isLiteral(?v)')
+            return _build_query(
+                f'{{ {_build_all_query()} }} FILTER isLiteral(?v)')
         if parameter == SH.BlankNode:
-            return _build_query('{' + _build_all_query()
-                                + '} FILTER isBlank(?v)')
+            return _build_query(
+                f'{{ {_build_all_query()} }} FILTER isBlank(?v)')
         if parameter == SH.BlankNodeOrIRI:
-            return _build_query('{' + _build_all_query()
-                                + '} FILTER ( isIRI(?v) || isBlank(?v) )')
+            return _build_query(
+                f'{{ {_build_all_query()} }} FILTER (isIRI(?v) || isBlank(?v))')
         if parameter == SH.BlankNodeOrLiteral:
-            return _build_query('{' + _build_all_query()
-                                + '} FILTER ( isBlank(?v) || isLiteral(?v) )')
+            return _build_query(
+                f'{{ {_build_all_query()} }} FILTER (isBlank(?v) || isLiteral(?v))')
         if parameter == SH.IRIOrLiteral:
-            return _build_query('{' + _build_all_query()
-                                + '} FILTER ( isIRI(?v) || isLiteral(?v) )')
+            return _build_query(
+                f'{{ {_build_all_query()} }} FILTER (isIRI(?v) || isLiteral(?v))')
+
     if test_type == 'min_exclusive':
-        return _build_query('{' + _build_all_query()
-                            + '} FILTER ?v > ' + str(parameter))
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER ?v > {str(parameter)}')
     if test_type == 'max_exclusive':
-        return _build_query('{' + _build_all_query()
-                            + '} FILTER ?v < ' + str(parameter))
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER ?v < {str(parameter)}')
     if test_type == 'min_inclusive':
-        return _build_query('{' + _build_all_query()
-                            + '} FILTER ?v >= ' + str(parameter))
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER ?v >= {str(parameter)}')
     if test_type == 'max_inclusive':
-        return _build_query('{' + _build_all_query()
-                            + '} FILTER ?v <= ' + str(parameter))
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER ?v <= {str(parameter)}')
     if test_type == 'min_length':
-        return _build_query('{' + _build_all_query()
-                            + '} FILTER strlen(?v) >= ' + str(parameter))
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER strlen(?v) >= {str(parameter)}')
     if test_type == 'max_length':
-        return _build_query('{' + _build_all_query()
-                            + '} FILTER strlen(?v) <= ' + str(parameter))
+        return _build_query(
+            f'{{ {_build_all_query()} }} FILTER strlen(?v) <= {str(parameter)}')
 
 
 def _build_pattern_query(pattern, flags):
-    return _build_query('{' + _build_all_query()
-                        + '} FILTER regex(?v,' + pattern + ', ' + flags + ')')
+    return _build_query(
+        f'{{ {_build_all_query()} }} FILTER regex(?v, {pattern}, {flags})')
 
 
 def to_path(node: PANode) -> str:
