@@ -13,8 +13,8 @@ def graph_paths(node):
     if node.pop == POp.PROP:
         prop = str(node.children[0])
         return f'''
-SELECT (?s AS ?t) ?s ({prop} AS ?p) ?o (?o AS ?h)
-WHERE {{ ?s {prop} ?o }}
+SELECT (?s AS ?t) ?s (<{prop}> AS ?p) ?o (?o AS ?h)
+WHERE {{ ?s <{prop}> ?o }}
 '''
     if node.pop == POp.ZEROORONE:
         qe1 = graph_paths(node.children[0])
@@ -243,3 +243,4 @@ WHERE {{
   {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER !( ?h2 <= ?h ) }}
 }} }}
 '''
+    return validation.to_uq(node)  # when Op is TOP or TEST etc

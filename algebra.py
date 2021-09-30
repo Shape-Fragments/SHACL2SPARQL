@@ -133,21 +133,6 @@ def negation_normal_form(node):
     return node
 
 
-def SANode_to_sparql(node: SANode) -> str:
-    if node.op in [Op.AND, Op.OR]:
-        return f'SELECT ?v ?s ?p ?o WHERE {{ {_create_union(node.children)} }}'
-
-    if node.op in None:
-        pass
-
-
-def _create_union(nodes: List[SANode]) -> str:
-    out = ''
-    for node in nodes:
-        out += ' {' + SANode_to_sparql(node) + ' } UNION '
-    return out[:-6]
-
-
 def parse(graph: Graph):
     schema = {}  # a mapping: shapename, SANode
     target = {}  # a mapping: shapename, target shape

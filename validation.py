@@ -94,14 +94,14 @@ def _build_geq_query(num, path, shape):
     return _build_query(f'''
 ?v {path} ?o .
 {{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
-''') + f'GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
+''') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
 
 def _build_leq_query(num, path, shape):
     return _build_query(f'''
 ?v {path} ?o .
 {{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
-''') + f'GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+''') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
 
 
 def _build_lt_query(num, path, shape):
@@ -198,7 +198,7 @@ def to_path(node: PANode) -> str:
 
 def to_uq(node: SANode) -> str:
     """to unary query; assumes shape is expanded"""
-    if node.op == Op.Top:
+    if node.op == Op.TOP:
         return _build_all_query()
 
     if node.op == Op.AND:
