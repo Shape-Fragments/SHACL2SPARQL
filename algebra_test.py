@@ -127,7 +127,7 @@ EX = Namespace('http://ex.tt/')
          ])
 def test_shape_parsing(graph_file, expected):
     g = Graph()
-    g.parse('./testfiles/' + graph_file)
+    g.parse('./algebra_testfiles/' + graph_file)
     g.namespace_manager.bind('rdf', RDF)
     # print('********* PARSED GRAPH  *********')
     # for s, p, o in g:
@@ -156,7 +156,7 @@ def test_shape_parsing(graph_file, expected):
                      SANode(Op.HASVALUE, [Literal(1)])]))])
 def test_shape_expansion(graph_file, expected):
     g = Graph()
-    g.parse('./testfiles/' + graph_file)
+    g.parse('./algebra_testfiles/' + graph_file)
     g.namespace_manager.bind('rdf', RDF)
 
     parsed = parse(g)[0]

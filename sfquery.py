@@ -1,6 +1,6 @@
 from algebra import SANode, Op, negation_normal_form
 from pathalg import PANode, POp
-import validation
+import unaryquery
 
 
 def _make_simple_comp(complist):
@@ -13,33 +13,36 @@ def graph_paths(node):
     if node.pop == POp.PROP:
         prop = str(node.children[0])
         return f'''
-SELECT (?s AS ?t) ?s (<{prop}> AS ?p) ?o (?o AS ?h)
-WHERE {{ ?s <{prop}> ?o }}
-'''
+        # graph_paths POp.PROP
+        SELECT (?s AS ?t) ?s (<{prop}> AS ?p) ?o (?o AS ?h)
+        WHERE {{ ?s <{prop}> ?o }}'''
     if node.pop == POp.ZEROORONE:
         qe1 = graph_paths(node.children[0])
         return f'''
-SELECT *
-WHERE {{
-  {{ {qe1} }}
-  UNION
-  {{
-    SELECT (?v AS ?t) (?v AS ?h)
-    WHERE {{ {{ ?v ?_p1 ?_o1 }} UNION {{ ?_s2 ?_p2 ?v }} }}
-  }} }}
-'''
+        # graph_paths POp.ZEROORONE
+        SELECT *
+        WHERE {{
+        {{ {qe1} }}
+        UNION
+        {{
+        SELECT (?v AS ?t) (?v AS ?h)
+        WHERE {{ {{ ?v ?_p1 ?_o1 }} UNION {{ ?_s2 ?_p2 ?v }} }}
+        }} }}'''
 
     if node.pop == POp.ALT:
         qes = ''
         for child in node.children:
             qes += f'{{ {graph_paths(child)} }} UNION '
-        return f'SELECT ?t ?S ?p ?o ?h WHERE {{ {qes[:-6]} }}'
+        return f'''
+        # graph_paths POp.ALT
+        SELECT ?t ?S ?p ?o ?h WHERE {{ {qes[:-6]} }}'''
 
     if node.pop == POp.COMP:
         node = _make_simple_comp(node.children)
         qe1 = graph_paths(node.children[0])
         qe2 = graph_paths(node.children[1])
         return f'''
+# graph_paths POp.COMP
 SELECT ?t ?s ?p ?o ?h
 WHERE {{
 {{
@@ -65,8 +68,9 @@ WHERE {{
 
     if node.pop == POp.KLEENE:
         qe1 = graph_paths(node.children[0])
-        path = validation.to_path(node)
+        path = unaryquery.to_path(node)
         return f'''
+# graph_paths POp.KLEENE
 SELECT ?t ?s ?p ?o ?h
 WHERE {{
   ?t {path} ?x1 .
@@ -89,12 +93,12 @@ def to_sfquery(node):
             qps += f'{{ {to_sfquery(child)} }} UNION '
         return f'SELECT ?v ?s ?p ?o WHERE {{ {qps[:-6]} }}'
 
-    cqp = validation.to_uq(node)
+    cqp = unaryquery.to_uq(node)
 
     if node.op == Op.GEQ:
-        cqp1 = validation.to_uq(node.children[2])
+        cqp1 = unaryquery.to_uq(node.children[2])
         qe = graph_paths(node.children[1])
-        path = validation.to_path(node.children[1])
+        path = unaryquery.to_path(node.children[1])
         qp1 = to_sfquery(node.children[2])
         return f'''
 SELECT (?t AS ?v) ?s ?p ?o
@@ -114,9 +118,9 @@ WHERE {{
     if node.op == Op.LEQ:
         qe = graph_paths(node.children[1])
         np1 = negation_normal_form(SANode(Op.NOT, [node.children[2]]))
-        cqnp1 = validation.to_uq(np1)
+        cqnp1 = unaryquery.to_uq(np1)
         qnp1 = to_sfquery(np1)
-        path = validation.to_path(node.children[1])
+        path = unaryquery.to_path(node.children[1])
 
         return f'''
 SELECT (?t AS ?v) ?s ?p ?o
@@ -136,7 +140,7 @@ WHERE {{
 
     if node.op == Op.FORALL:
         qe = graph_paths(node.children[0])
-        path = validation.to_path(node.children[0])
+        path = unaryquery.to_path(node.children[0])
         qp1 = to_sfquery(node.children[1])
 
         return f'''
@@ -183,7 +187,7 @@ FILTER (?p NOT IN {notinlist})
 '''
         if child.op == Op.UNIQUELANG:
             qe = graph_paths(child.children[0])
-            path = validation.to_path(child.children[0])
+            path = unaryquery.to_path(child.children[0])
 
             return f'''
 SELECT ( ?t AS ?v ) ?s ?p ?o
@@ -197,8 +201,8 @@ FILTER (?h != ?h2 && lang(?h) = lang(?h2))
         if child.op in [Op.EQ, Op.DISJ, Op.LESSTHAN, Op.LESSTHANEQ]:
             qe = graph_paths(child.children[0])
             qp = graph_paths(child.children[1])
-            path = validation.to_path(child.children[0])  # E
-            prop = validation.to_path(child.children[1])  # p
+            path = unaryquery.to_path(child.children[0])  # E
+            prop = unaryquery.to_path(child.children[1])  # p
 
             if child.op == Op.EQ:
                 return f'''
@@ -243,4 +247,4 @@ WHERE {{
   {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER !( ?h2 <= ?h ) }}
 }} }}
 '''
-    return validation.to_uq(node)  # when Op is TOP or TEST etc
+    return unaryquery.to_uq(node)  # when Op is TOP or TEST etc

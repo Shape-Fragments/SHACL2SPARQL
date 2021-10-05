@@ -1,0 +1,38 @@
+@prefix : <http://ex.tt/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:shape a sh:NodeShape ;
+    sh:and ( :and1 :and2 :and3) ;
+    sh:or ( :or1 :or2 :or3) ;
+    sh:not :not1 ;
+    sh:xone ( :xone1 :xone2 :xone3) .
+
+:not1 a sh:NodeShape ;
+    sh:in ( :notin1 ).
+
+:and1 a sh:NodeShape ;
+    sh:in (:andval).
+
+:and2 a sh:NodeShape ;
+    sh:in (:andval).
+
+:and3 a sh:NodeShape ;
+    sh:in (:andval).
+
+:or1 a sh:NodeShape ;
+    sh:in (:orval).
+
+:or2 a sh:NodeShape ;
+    sh:in (:orval).
+
+:or3 a sh:NodeShape ;
+    sh:in (:orval).
+
+:xone1 a sh:NodeShape ;
+    sh:in (:xoneval).
+
+:xone2 a sh:NodeShape ;
+    sh:in (:xoneval).
+
+:xone3 a sh:NodeShape ;
+    sh:in (:xoneval).

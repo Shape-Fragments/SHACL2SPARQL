@@ -1,7 +1,3 @@
-# TODO: parse a schema (set of class shape)
-# TODO: rewrite to negation normal form
-# TODO: rewrite to SPARQL
-
 import mypy
 from typing import List
 from enum import Enum, auto
@@ -73,7 +69,10 @@ def expand_shape(schema, node):
     '''Removes all hasshape references and replaces them with shapes'''
 
     if node.op == Op.HASSHAPE:
-        return expand_shape(schema, schema[node.children[0]])
+        tobe_expanded = schema[node.children[0]]
+        if tobe_expanded not in list(schema):
+            return SANode(Op.TOP, [])  # mimics real SHACL semantics
+        return expand_shape(schema, tobe_expanded)
 
     new_children = []
     for child in node.children:
@@ -253,13 +252,13 @@ def _logic_parse(graph: Graph, shapename):
 
 def _tests_parse(graph: Graph, shapename):
     # TODO: for now, sh:class only works naively
-    # TODO: sh:pattern not implemented
     out = SANode(Op.AND, [])
 
     # sh:class
     for sh_class in _extract_parameter_values(graph, shapename, SH['class']):
         out.children.append(
-            SANode(Op.GEQ, [Literal(1), RDF.type,
+            SANode(Op.GEQ, [Literal(1), pathalg.PANode(pathalg.POp.PROP,
+                                                       [RDF.type]),
                             SANode(Op.HASVALUE, [sh_class])]))
 
     # sh:datatype
@@ -346,7 +345,9 @@ def _closed_parse(graph: Graph, shapename):
         if type(path) == URIRef:
             direct_props.append(path)
 
-    return SANode(Op.CLOSED, sh_ignored + direct_props)
+    closed_props = sh_ignored + direct_props
+    children = [pathalg.PANode(pathalg.POp.PROP, [prop]) for prop in closed_props]
+    return SANode(Op.CLOSED, children)
 
 
 def _card_parse(graph: Graph, path: pathalg.PANode, shapename):

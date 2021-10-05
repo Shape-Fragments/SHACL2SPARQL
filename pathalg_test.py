@@ -41,7 +41,7 @@ EX = Namespace('http://ex.tt/')
                                      ])
 def test_path_parsing(graph_file, expected_path):
     g = Graph()
-    g.parse('./testfiles/' + graph_file)
+    g.parse('./algebra_testfiles/' + graph_file)
 
     path = next(g.objects(URIRef('http://ex.tt/subjto')))
 

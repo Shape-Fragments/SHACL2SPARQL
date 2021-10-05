@@ -4,7 +4,7 @@ from rdflib.namespace import SH
 
 
 def _build_query(body):
-    return 'SELECT ?v WHERE { ' + body + '}'
+    return f'SELECT ?v WHERE {{ {body} }}'
 
 
 def _build_all_query():
@@ -14,7 +14,7 @@ def _build_all_query():
 def _build_join(queries):
     out = ''
     for query in queries:
-        out += '{' + query + '} . '
+        out += f'{{ {query} }} . '
     return _build_query(out[:-2])
 
 
@@ -84,7 +84,7 @@ def _build_forall_query(path, shape):
         _build_query(f'''
 ?v {path} ?o.
 {{
-  SELECT ?v AS ?o
+  SELECT (?v AS ?o)
   WHERE {{ {_build_negate(shape)} }}
 }}
 '''))
@@ -104,16 +104,20 @@ def _build_leq_query(num, path, shape):
 ''') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
 
 
-def _build_lt_query(num, path, shape):
-    raise NotImplementedError()
+def _build_lt_query(path, prop):
+    return _build_query(f'''
+?v {path} ?e FILTER NOT EXISTS {{ ?v {prop} ?p FILTER ( ?p >= ?e )}}
+''')
 
 
-def _build_lte_query(num, path, shape):
-    raise NotImplementedError()
+def _build_lte_query(path, prop):
+    return _build_query(f'''
+?v {path} ?e FILTER NOT EXISTS {{ ?v {prop} ?p FILTER ( ?p > ?e )}}
+''')
 
 
 def _build_hasvalue_query(value):
-    return _build_query(f'BIND ( ?v AS {str(value)} )')
+    return _build_query(f'BIND ( <{str(value)}> AS ?v )')
 
 
 def _build_uniquelang_query(path):
@@ -123,7 +127,7 @@ def _build_uniquelang_query(path):
 def _build_test_query(test_type, parameter):
     if test_type == 'datatype':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER (datatype(?v) = {str(parameter)})')
+            f'{{ {_build_all_query()} }} FILTER (datatype(?v) = <{str(parameter)}>)')
     if test_type == 'nodekind':
         if parameter == SH.IRI:
             return _build_query(
@@ -146,27 +150,30 @@ def _build_test_query(test_type, parameter):
 
     if test_type == 'min_exclusive':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ?v > {str(parameter)}')
+            f'{{ {_build_all_query()} }} FILTER ( ?v > {str(parameter)} )')
     if test_type == 'max_exclusive':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ?v < {str(parameter)}')
+            f'{{ {_build_all_query()} }} FILTER ( ?v < {str(parameter)} )')
     if test_type == 'min_inclusive':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ?v >= {str(parameter)}')
+            f'{{ {_build_all_query()} }} FILTER ( ?v >= {str(parameter)} )')
     if test_type == 'max_inclusive':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ?v <= {str(parameter)}')
+            f'{{ {_build_all_query()} }} FILTER ( ?v <= {str(parameter)} )')
     if test_type == 'min_length':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER strlen(?v) >= {str(parameter)}')
+            f'{{ {_build_all_query()} }} FILTER ( strlen(?v) >= {str(parameter)} )')
     if test_type == 'max_length':
         return _build_query(
-            f'{{ {_build_all_query()} }} FILTER strlen(?v) <= {str(parameter)}')
+            f'{{ {_build_all_query()} }} FILTER ( strlen(?v) <= {str(parameter)} )')
 
 
 def _build_pattern_query(pattern, flags):
+    fmt_flags = ''
+    for flag in flags:
+        fmt_flags += str(flag)
     return _build_query(
-        f'{{ {_build_all_query()} }} FILTER regex(?v, {pattern}, {flags})')
+        f'{{ {_build_all_query()} }} FILTER regex(?v, "{str(pattern)}", "{fmt_flags}")')
 
 
 def to_path(node: PANode) -> str:
@@ -198,6 +205,9 @@ def to_path(node: PANode) -> str:
 
 def to_uq(node: SANode) -> str:
     """to unary query; assumes shape is expanded"""
+    if node.op == Op.HASSHAPE:
+        raise ValueError('node must be expanded')
+
     if node.op == Op.TOP:
         return _build_all_query()
 
@@ -260,6 +270,6 @@ def to_uq(node: SANode) -> str:
         return _build_uniquelang_query(to_path(node.children[0]))
 
     if node.op == Op.TEST:
-        if node.chidren[0] == 'pattern':
+        if node.children[0] == 'pattern':
             return _build_pattern_query(node.children[1], node.children[2])
         return _build_test_query(node.children[0], node.children[1])
