@@ -1,0 +1,40 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix gr: <http://purl.org/goodrelations/> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix mo: <http://purl.org/ontology/mo/> .
+@prefix rev: <http://purl.org/ontology/stuff/rev#> .
+@prefix foaf: <http://xmlns.com/foaf/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:F5shape a sh:NodeShape ;
+    sh:targetSubjectsOf gr:price ;
+    sh:property [
+        sh:path [ sh:inversePath gr:offers ] ;
+        sh:hasValue wsdbm:Retailer45 ;
+        ] ;
+    sh:property [
+        sh:path gr:validThrough ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path gr:includes ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:and (
+                [
+                    sh:path ogp:title ;
+                    sh:minCount 1 ;
+                    ]
+                [
+                    sh:path rdf:type ;
+                    sh:minCount 1 ;
+                    ]
+                ) ;
+            ] ;
+        ] .
+        

@@ -1,0 +1,14 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:L4shape a sh:NodeShape ;
+    sh:targetSubjectsOf sorg:caption ;
+    sh:property [
+        sh:path ogp:tag ;
+        sh:hasValue wsdbm:Topic93 ;
+        ] .
+        

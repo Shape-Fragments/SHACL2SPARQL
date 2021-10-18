@@ -1,0 +1,47 @@
+@prefix schema: <http://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix : <http://gdb.benchmark.com/>.
+
+:AggregateRatingShape a sh:NodeShape;
+    sh:targetClass schema:AggregateRating;
+    sh:nodeKind sh:BlankNode;
+    sh:property [
+        sh:path schema:bestRating;
+        sh:minCount 1;
+        sh:maxCount 1;
+        sh:or(
+            [
+                sh:datatype xsd:integer;
+                sh:minInclusive 0;
+                sh:maxInclusive 5;
+                ]
+            [
+                sh:datatype xsd:double;
+                sh:minInclusive 0.0;
+                sh:maxInclusive 5.0;
+                ]
+            [
+                sh:datatype xsd:string;
+                sh:pattern "[0-5][.]?[0-9]?";
+                ]
+            );
+        sh:message "Best rating has invalid value or is not set"
+        ];
+    sh:property [
+        sh:path schema:ratingCount;
+        sh:datatype xsd:integer;
+        sh:minCount 1;
+        sh:maxCount 1;
+        sh:message "Rating count is not set"
+        ];
+    sh:property [
+        sh:path schema:ratingValue;
+        sh:datatype xsd:integer;
+        sh:minCount 1;
+        sh:maxCount 1;
+        sh:message "Rating Value is not set"
+        ].
+

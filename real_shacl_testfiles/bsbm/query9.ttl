@@ -1,0 +1,77 @@
+@prefix bsbm-inst-dfp3: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer3/> .
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/>  .
+@prefix : <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+
+:Q2shape a sh:NodeShape ;
+    sh:targetNode bsbm-inst-dfp3:Product122 ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path rdfs:comment ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:producer ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:and (
+                [
+                    sh:path rdfs:label ;
+                    sh:minCount 1 ;
+                    ] 
+                [
+                    sh:path [ sh:inversePath dc:publisher ] ;
+                    sh:hasValue bsbm-inst-dfp3:Product122 ;
+                    ] 
+                ) ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productFeature ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:path rdfs:label ;
+            sh:minCount 1 ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyTextual1 ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyTextual2 ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyTextual3 ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyNumeric1 ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyNumeric2 ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyTextual4 ;
+        sh:minCount 0 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyTextual5 ;
+        sh:minCount 0 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyNumeric4 ;
+        sh:minCount 0 ;
+        ] .
+        
+
+

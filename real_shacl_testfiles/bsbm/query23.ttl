@@ -1,0 +1,51 @@
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/>  .
+@prefix rev: <http://purl.org/stuff/rev#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:Q22shape a sh:NodeShape ;
+    sh:targetSubjectsOf bsbm:product ;
+    sh:property [
+        sh:path bsbm:product ;
+        sh:hasValue <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer18/Product840> ;
+        ] ;
+    sh:property [
+        sh:path bsbm:vendor ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:path bsbm:country ;
+            sh:hasValue <http://downlode.org/rdf/iso-3166/countries#US> ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path dc:publisher ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:vendor ;
+        sh:equals dc:publisher ;
+        ] ;
+    sh:property [
+        sh:path bsbm:deliveryDays ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:maxInclusive 3 ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:price ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:validTo ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:minExclusive "2008-06-20T00:00:00"^^xsd:dateTime ;
+            ] ;
+        ] .
+        
+        
+

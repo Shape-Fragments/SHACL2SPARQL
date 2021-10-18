@@ -1,0 +1,93 @@
+@prefix bsbm-inst-dfp33: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer33/> .
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/>  .
+@prefix rev: <http://purl.org/stuff/rev#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:Q11shape a sh:NodeShape ;
+    sh:targetNode bsbm-inst-dfp33:Product1524 ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path [ sh:inversePath bsbm:product ] ;
+        sh:qualifiedMinCount 0 ;
+        sh:qualifiedValueShape _:opt1 ; #optional
+        ] ;
+    sh:property [
+        sh:path [ sh:inversePath bsbm:reviewFor ] ;
+        sh:qualifiedMinCount 0 ;
+        sh:qualifiedValueShape _:opt2 ; #optional
+        ] .
+
+
+_:opt1 a sh:NodeShape ; #offer 
+    sh:property [
+        sh:path bsbm:price ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:vendor ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:and (
+                [
+                    sh:property [
+                        sh:path rdfs:label ;
+                        sh:minCount 1 ;
+                        ] ;
+                    ]
+                [
+                    sh:property [
+                        sh:path bsbm:country ;
+                        sh:hasValue <http://downlode.org/rdf/iso-3166/countries#DE> ;
+                        ] ;
+                    ]
+                ) ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path dc:publisher ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:validTo ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:minExclusive "2008-06-20T00:00:00"^^xsd:dateTime ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:vendor ;
+        sh:equals dc:publisher ;
+        ] .
+
+
+_:opt2 a sh:NodeShape ; #reviewer
+    sh:property [
+        sh:path rev:reviewer ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:path foaf:name ;
+            sh:minCount  1 ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path dc:title ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [ #inner optional
+        sh:path bsbm:rating1 ;
+        sh:minCount 0 ;
+        ] ;
+    sh:property [ #innter optional
+        sh:path bsbm:rating2 ;
+        sh:minCount 0 ;
+        ] .
+        
+    

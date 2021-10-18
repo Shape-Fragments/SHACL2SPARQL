@@ -1,0 +1,290 @@
+@prefix schema: <http://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix : <http://gdb.benchmark.com/>.
+
+#========================================
+#Paths for DatatypeProperties
+#========================================
+:alternateNamePath sh:path schema:alternateName;
+    sh:datatype xsd:string;
+    sh:message "Alternate name has wrong type".
+
+:descriptionRequiredPath sh:path schema:description;
+    sh:minCount 1;
+    sh:message "Description not set".
+
+:descriptionPath sh:path schema:description;
+    sh:datatype xsd:string;
+    sh:maxCount 1;
+    sh:message "Description not set".
+
+:distancePath sh:path schema:distance;
+    sh:datatype xsd:string;
+    sh:pattern "[0-9.]+ km".
+
+:emailPath sh:path schema:email;
+  sh:datatype xsd:string;
+  sh:maxCount 1;
+  sh:pattern "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[a-z]{2,4}";
+  sh:message "Email address invalid".
+
+:emailRequiredPath sh:path schema:email;
+    sh:minCount 1;
+    sh:message "Email address not set".
+
+:endDatePath sh:path schema:endDate;
+    sh:datatype xsd:string;
+    sh:pattern "(19[7-9][0-9]|20[0-2][0-9])-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])T(00|0[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])[.]([0-9][0-9][0-9])Z";
+    sh:message "End date has invalid form".
+
+:faxNumberPath sh:path schema:faxNumber;
+  sh:datatype xsd:string;
+  sh:maxCount 1;
+  sh:or(
+    [
+        sh:pattern "(0043)[0-9\\ ]*";
+    ]
+    [
+        sh:pattern "[+]43[0-9\\ ]*";
+    ]
+    [
+        sh:pattern "0043[0-9\\ ]*";
+    ]
+    [
+        sh:maxLength 0;
+    ]
+  );
+  sh:message "Fax number is invalid or not from Tirol".
+
+:hasMapPath sh:path schema:hasMap;
+    sh:datatype xsd:string;
+    sh:maxCount 1;
+    sh:pattern "((?:http|https)://)?(?:www\\.)?[\\w\\d\\-_]+\\.\\w{2,3}(\\.\\w{2})?(/(?<=/)(?:[\\w\\d\\-./_]+)?)?";
+    sh:message "Map not available".
+
+:hasMenuPath sh:path schema:hasMenu;
+    sh:minCount 1;
+    sh:maxCount 1;
+    sh:or(
+        [
+            sh:datatype xsd:string;
+        ]
+        [
+            sh:class schema:Menu;
+        ]
+    );
+    sh:message "Menu is not set".
+
+
+:identifierPath sh:path schema:identifier;
+    sh:datatype xsd:string;
+    sh:maxCount 1;
+    sh:pattern "[0-9]+".
+
+:identifierRequiredPath sh:path schema:identifier;
+    sh:minCount 1;
+    sh:message "Identifier is not set".
+
+:namePath sh:path schema:name;
+  sh:datatype xsd:string;
+  sh:maxCount 1;
+  sh:minCount 1;
+  sh:message "Name not set or has wrong type".
+
+:openingHoursPath sh:path schema:openingHours;
+    sh:datatype xsd:string.
+
+:priceRangePath sh:path schema:priceRange;
+    sh:datatype xsd:string;
+    sh:minCount 1;
+    sh:maxCount 1;
+    sh:pattern "[$]?[0-9.]+[€]?[ ]?-[ ]?[$]?[0-9.]+[€]?";
+    sh:message "Price range has invalid format or not set".
+
+:sameAsPath sh:path schema:sameAs;
+    sh:datatype xsd:string;
+    sh:maxCount 1;
+    sh:pattern "((?:http|https)://)?(?:www\\.)?[\\w\\d\\-_]+\\.\\w{2,3}(\\.\\w{2})?(/(?<=/)(?:[\\w\\d\\-./_]+)?)?";
+    sh:message "sameAs is not set or invalid".
+
+:servesCuisinePath sh:path schema:servesCuisine;
+        sh:datatype xsd:string;
+        sh:minCount 1;
+        sh:message "Serves cuisine info not set".
+
+:startDatePath sh:path schema:startDate;
+    sh:datatype xsd:string;
+    sh:pattern "(19[7-9][0-9]|20[0-2][0-9])-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])T(00|0[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])[.]([0-9][0-9][0-9])Z";
+    sh:message "Start date has invalid form".
+
+:telephonePath sh:path schema:telephone;
+    sh:datatype xsd:string;
+    sh:maxCount 1;
+    sh:or(
+        [
+        sh:pattern "(0043)[0-9\\ ]*";
+    ]
+    [
+        sh:pattern "[+]43[0-9\\ ]*";
+    ]
+    [
+        sh:pattern "0043[0-9\\ ]*";
+    ]
+    );
+    sh:message "Telephone number is not set or not from Tirol".
+
+:telephoneRequiredPath sh:path schema:telephone;
+    sh:minCount 1;
+    sh:message "Telephone number not set".
+
+:urlRequiredPath sh:path schema:url;
+    sh:minCount 1;
+    sh:message "URL not set".
+
+:urlPath sh:path schema:url;
+    sh:datatype xsd:string;
+    sh:maxCount 1;
+    sh:pattern "((?:http|https)://)?(?:www\\.)?[\\w\\d\\-_]+\\.\\w{2,3}(\\.\\w{2})?(/(?<=/)(?:[\\w\\d\\-./_]+)?)?";
+    sh:message "URL not set or invalid".
+
+:validFromPath sh:path schema:validFrom;
+        sh:datatype xsd:string;
+        sh:pattern "(19[7-9][0-9]|20[0-2][0-9])-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])T(00|0[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])[.]([0-9][0-9][0-9])Z";
+        sh:message "Valid from is invalid".
+
+:validThroughPath sh:path schema:validThrough;
+        sh:datatype xsd:string;
+        sh:pattern "(19[7-9][0-9]|2[0-1][0-9][0-9])-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])T(00|0[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])[.]([0-9][0-9][0-9])Z";
+        sh:message "Valid Through is invalid".
+
+    
+
+
+#========================================
+#Paths for ObjectProperties
+#========================================
+:addressPath sh:path schema:address;
+    sh:nodeKind sh:BlankNode;
+    sh:maxCount 1;
+    sh:class schema:PostalAddress.
+    
+:addressRequiredPath sh:path schema:address;
+    sh:minCount 1;
+    sh:message "Address is not set".
+
+:aggregateRatigPath sh:path schema:aggregateRating;
+    sh:nodeKind sh:BlankNode;
+    sh:maxCount 1;
+    sh:class schema:AggregateRating.
+    
+:aggregateRatigRequiredPath sh:path schema:aggregateRatig;
+    sh:minCount 1;
+    sh:message "Aggregate rating is not set".
+
+:amenityFeaturePath sh:path schema:amenityFeature;
+    sh:nodeKind sh:BlankNode;
+    sh:class schema:LocationFeatureSpecification.
+
+:containsPlacePath sh:path schema:containsPlace;
+    sh:nodeKind sh:BlankNode;
+    sh:class schema:Place.
+
+:contactPointPath sh:path schema:contactPoint;
+    sh:nodeKind sh:BlankNode;
+    sh:class schema:ContactPoint.
+
+:employeePath sh:path schema:employee;
+    sh:nodeKind sh:BlankNode;
+    sh:class schema:Person.
+
+:eventPath sh:path schema:event;
+    sh:nodeKind sh:BlankNodeOrIRI;
+    sh:class schema:Event.
+
+
+:geoPath sh:path schema:geo;
+    sh:nodeKind sh:BlankNode;
+    sh:class schema:GeoCoordinates.
+
+:imageRequiredPath sh:path schema:image;
+    sh:minCount 1;
+    sh:message "Image is not set".
+
+:imagePath sh:path schema:image;
+    sh:nodeKind sh:BlankNodeOrIRI;
+    sh:maxCount 1;
+    sh:or(
+        [
+            sh:datatype schema:ImageObject;
+        ]
+        [
+            sh:datatype xsd:string;
+            sh:pattern "((?:http|https)://)?(?:www\\.)?[\\w\\d\\-_]+\\.\\w{2,3}(\\.\\w{2})?(/(?<=/)(?:[\\w\\d\\-./_]+)?)?+[.(jpg|jpeg|gif|tif|png|bmp)]?";
+        ]   
+    ).
+
+:locationPath sh:path schema:location;
+    sh:nodeKind sh:BlankNodeOrIRI;
+    sh:class schema:Place.
+
+:makesOfferPath sh:path schema:makeOffer;
+    sh:nodeKind sh:BlankNodeOrIRI;
+    sh:class schema:Offer.
+
+:offersPath sh:path schema:offers;
+    sh:nodeKind sh:BlankNodeOrIRI;
+    sh:minCount 1;
+    sh:class schema:Offer.
+
+:organizerPath sh:path schema:organizer;
+    sh:nodeKind sh:BlankNodeOrIRI;
+    sh:or(
+        [
+            sh:class schema:Organization;
+        ]
+        [
+            sh:class schema:Person;
+        ]
+    ).
+
+:openingHoursSpecificationPath sh:path schema:openingHoursSpecification;
+    sh:nodeKind sh:BlankNode;
+    sh:class schema:OpeningHoursSpecification.
+
+:openingHoursSpecificationRequiredPath sh:path schema:openingHoursSpecification;
+    sh:minCount 1;
+    sh:message "Opening hours specification is not set".
+
+:starRatingPath sh:path schema:starRating;
+    sh:nodeKind sh:BlankNode;
+    sh:maxCount 1;
+    sh:class schema:Rating.
+
+
+:AutomotiveBusinessShape a sh:NodeShape;
+    sh:targetClass schema:AutomotiveBusiness;
+    sh:nodeKind sh:IRI;
+    sh:property :addressRequiredPath;
+    sh:property :addressPath;
+    sh:property :contactPointPath;
+    sh:property :descriptionPath;
+    sh:property :emailRequiredPath;
+    sh:property :emailPath;
+    sh:property :faxNumberPath;
+    sh:property :geoPath;
+    sh:property :hasMapPath;
+    sh:property :identifierPath;
+    sh:property :imageRequiredPath;
+    sh:property :imagePath;
+    sh:property :namePath;
+    sh:property :openingHoursSpecificationRequiredPath;
+    sh:property :openingHoursSpecificationPath;
+    sh:property :priceRangePath;
+    sh:property :sameAsPath;
+    sh:property :telephoneRequiredPath;
+    sh:property :telephonePath;
+    sh:property :urlRequiredPath;
+    sh:property :urlPath.

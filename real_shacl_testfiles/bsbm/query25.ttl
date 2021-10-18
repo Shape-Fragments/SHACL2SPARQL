@@ -1,0 +1,54 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rev: <http://purl.org/stuff/rev#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/>  .
+@prefix : <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:Q25shape a sh:NodeShape ;
+    sh:targetNode <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor27/Offer49589> ;
+    sh:property [
+        sh:path bsbm:product ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:path rdfs:label ;
+            sh:minCount 1 ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:vendor ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:and (
+                [
+                    sh:path rdfs:label ;
+                    sh:minCount 1 ;
+                    ]
+                [
+                    sh:path foaf:homepage ;
+                    sh:minCount 1 ;
+                    ]
+                ) ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:offerWebpage ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:price ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:deliveryDays ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:validTo ;
+        sh:minCount 1 ;
+        ] .
+        
+    
+    
+        

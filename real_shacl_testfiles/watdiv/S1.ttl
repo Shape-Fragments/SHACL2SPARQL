@@ -1,0 +1,43 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix gr: <http://purl.org/goodrelations/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:S1shape a sh:NodeShape ;
+    sh:targetSubjectsOf gr:includes ;
+    sh:property [
+        sh:path gr:price ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path [ sh:inversePath gr:offers ] ;
+        sh:hasValue wsdbm:Retailer74 ;
+        ] ;
+    sh:property [
+        sh:path gr:serialNumber ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path gr:validFrom ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path gr:validThrough ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path sorg:eligibleQuantity ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path sorg:eligibleRegion ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path sorg:priceValidUntil ;
+        sh:minCount 1 ;
+        ] .
+        

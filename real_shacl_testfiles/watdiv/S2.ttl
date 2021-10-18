@@ -1,0 +1,25 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix gr: <http://purl.org/goodrelations/> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:S2shape a sh:NodeShape ;
+    sh:targetSubjectsOf dc:Location ;
+    sh:property [
+        sh:path sorg:nationality ;
+        sh:hasValue wsdbm:Country15 ;
+        ] ;
+    sh:property [
+        sh:path wsdbm:gender ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path rdf:type ;
+        sh:hasValue wsdbm:Role2 ;
+        ] .
+        

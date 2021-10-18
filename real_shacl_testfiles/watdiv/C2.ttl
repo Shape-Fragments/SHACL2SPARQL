@@ -1,0 +1,65 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix gr: <http://purl.org/goodrelations/> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix mo: <http://purl.org/ontology/mo/> .
+@prefix rev: <http://purl.org/ontology/stuff/rev#> .
+@prefix foaf: <http://xmlns.com/foaf/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:C2shape a sh:NodeShape ;
+    sh:targetSubjectsOf sorg:legalName ; # start at v0, get v1
+    sh:property [
+        sh:path gr:offers ; #get v2
+        sh:qualifiedValueShape [
+            sh:and (
+                [
+                    sh:path sorg:eligibleRegion ; #get constant
+                    sh:hasValue wsdbm:Country5 ;
+                    ]
+                _:v3 #also get v3
+                ) ;
+            ] ;
+        sh:qualifiedMinCount 1 ;
+        ] .
+        
+
+_:v3 sh:path gr:includes ; 
+    sh:qualifiedValueShape [
+        sh:and (
+            [
+                sh:path rev:hasReview ;#get v8
+                sh:qualifiedValueShape [
+                    sh:path rev:totalVotes ;#get v9
+                    sh:minCount 1 ;
+                    ] ;
+                sh:qualifiedMinCount 1 ;
+                ]
+            _:v7 # also get v7
+            ) ;
+        ] ;
+    sh:qualifiedMinCount 1 .
+    
+    
+    
+_:v7  sh:path [ sh:inversePath wsdbm:purchaseFor ] ; #get v7
+    sh:qualifiedValueShape [
+        sh:path [ sh:inversePath wsdbm:makesPurchase ] ; #get v4
+        sh:and (
+            [
+                sh:path sorg:jobTitle ;
+                sh:minCount 1 ;
+                ]
+            [
+                sh:path foaf:homepage ;
+                sh:minCount 1 ;
+                ]
+            ) ;
+        ] ;
+    sh:qualifiedMinCount 1 .
+    
+    

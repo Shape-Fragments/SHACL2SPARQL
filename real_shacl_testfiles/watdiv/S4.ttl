@@ -1,0 +1,28 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix gr: <http://purl.org/goodrelations/> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix mo: <http://purl.org/ontology/mo/> .
+@prefix foaf: <http://xmlns.com/foaf/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:S4shape a sh:NodeShape ;
+    sh:targetSubjectsOf foaf:familyName ;
+    sh:property [
+        sh:path foaf:age ;
+        sh:hasValue wsdbm:AgeGroup6 ;
+        ] ;
+    sh:property [
+        sh:path sorg:nationality ;
+        sh:hasValue wsdbm:Country1 ;
+        ] ;
+    sh:property [
+        sh:path [ sh:inversePath mo:artist ] ;
+        sh:minCount 1 ;
+        ] .
+        
+    

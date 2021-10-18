@@ -1,0 +1,39 @@
+@prefix bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> .
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:Q4shape a sh:NodeShape ;
+    sh:targetClass bsbm-inst:ProductType106 ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productFeature ;
+        sh:hasValue bsbm-inst:ProductFeature870 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyNumeric1 ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [ sh:minExclusive 399 ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productPropertyNumeric3 ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [ sh:maxExclusive 311 ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:productFeature ;
+        sh:qualifiedMaxCount 0 ;
+        sh:qualifiedValueShape [
+            sh:hasValue bsbm-inst:ProductFeature59 ;
+            ] ;
+        ] .
+        
+        
+    
+        
+    

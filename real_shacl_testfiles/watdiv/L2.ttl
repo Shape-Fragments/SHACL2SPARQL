@@ -1,0 +1,21 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:L2shape a sh:NodeShape ;
+    sh:targetNode wsdbm:Product0 ;
+    sh:property [
+        sh:path [ sh:inversePath wsdbm:likes ] ;
+        sh:qualifiedValueShape [
+            sh:path sorg:nationality ;
+            sh:qualifiedValueShape [
+                sh:path [ sh:inversePath gn:parentCountry ] ;
+                sh:hasValue wsdbm:City89 ;
+                ] ;
+            sh:qualifiedMinCount 1 ;
+            ] ;
+        sh:qualifiedMinCount 1 ;
+        ] .
+        

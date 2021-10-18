@@ -1,0 +1,21 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix gr: <http://purl.org/goodrelations/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:L5shape a sh:NodeShape ;
+    sh:targetSubjectsOf sorg:jobTitle ;
+    sh:property [
+        sh:path sorg:nationality ;
+        sh:qualifiedValueShape [
+            sh:path [ sh:inversePath gn:parentCountry ] ;
+            sh:hasValue wsdbm:City89 ;
+            ] ;
+        sh:qualifiedMinCount 1 ;
+        ] .
+
+
+

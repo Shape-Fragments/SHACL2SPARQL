@@ -1,0 +1,52 @@
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix rev: <http://purl.org/stuff/rev#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> . 
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix : <http://example.org/> .
+
+:Q16shape a sh:NodeShape ;
+    sh:targetSubjectsOf dc:title ;
+    sh:property [
+        sh:path bsbm:reviewFor ;
+        sh:hasValue <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer42/Product1948> ; 
+        ] ;
+    sh:property [
+        sh:path rev:text ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [ sh:languageIn ( "EN" ) ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:reviewDate ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path rev:reviewer ;
+        sh:qualifiedMinCount 1 ;
+        sh:qualifiedValueShape [
+            sh:path foaf:name ;
+            sh:minCount 1 ;
+            ] ;
+        ] ;
+    sh:property [
+        sh:path bsbm:rating1 ;
+        sh:minCount 0 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:rating2 ;
+        sh:minCount 0 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:rating3 ;
+        sh:minCount 0 ;
+        ] ;
+    sh:property [
+        sh:path bsbm:rating4 ;
+        sh:minCount 0 ;
+        ] .
+        
+    
+    
+        
+        
+    

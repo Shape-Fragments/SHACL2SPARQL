@@ -1,0 +1,18 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sorg: <http://schema.org/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix ogp: <http://ogp.me/ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:L3shape a sh:NodeShape ;
+    sh:targetSubjectsOf wsdbm:likes ;
+    sh:property [
+        sh:path wsdbm:likes ;
+        sh:minCount 1 ;
+        ] ;
+    sh:property [
+        sh:path wsdbm:subscribes ;
+        sh:hasValue wsdbm:Website186 ;
+        ] .
+        

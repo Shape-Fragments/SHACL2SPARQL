@@ -1,0 +1,23 @@
+@prefix : <http://example.org/> .
+@prefix wsdbm: <http://db.uwaterloo.ca/~galuc/wsdbm/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix sorg: <http://schema.org/> .
+
+:L1shape a sh:NodeShape ;
+    sh:targetNode wsdbm:Website186 ;
+    sh:property [
+	sh:path [ sh:inversePath wsdbm:subscribes ] ;
+	sh:qualifiedMinCount 1 ;
+	sh:qualifiedValueShape [
+            sh:property [
+                sh:path wsdbm:likes ;
+                sh:qualifiedMinCount 1 ;
+	        sh:qualifiedValueShape [
+                    sh:property [
+                        sh:path sorg:caption ;
+                        sh:minCount 1 ;
+                    ] ;
+                ] ;
+            ];
+        ];
+    ] .
