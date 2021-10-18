@@ -65,20 +65,19 @@ class Shape:
         self.name = name
 
 
-def expand_shape(schema, node):
+def expand_shape(definitions, node):
     '''Removes all hasshape references and replaces them with shapes'''
 
     if node.op == Op.HASSHAPE:
-        tobe_expanded = schema[node.children[0]]
-        if tobe_expanded not in list(schema):
+        if node.children[0] not in definitions:
             return SANode(Op.TOP, [])  # mimics real SHACL semantics
-        return expand_shape(schema, tobe_expanded)
+        return expand_shape(definitions, definitions[node.children[0]])
 
     new_children = []
     for child in node.children:
         new_child = child
         if type(child) == SANode:
-            new_child = expand_shape(schema, child)
+            new_child = expand_shape(definitions, child)
         new_children.append(new_child)
     return SANode(node.op, new_children)
 
@@ -133,7 +132,7 @@ def negation_normal_form(node):
 
 
 def parse(graph: Graph):
-    schema = {}  # a mapping: shapename, SANode
+    definitions = {}  # a mapping: shapename, SANode
     target = {}  # a mapping: shapename, target shape
 
     # this defines what nodeshapes are parsed, should follow the spec on what a
@@ -142,7 +141,7 @@ def parse(graph: Graph):
                  list(graph.objects(predicate = SH.node)) + \
                  list(graph.objects(predicate = SH.qualifiedValueShape))
     for nodeshape in nodeshapes:
-        schema[nodeshape] = _nodeshape_parse(graph, nodeshape)
+        definitions[nodeshape] = _nodeshape_parse(graph, nodeshape)
         target[nodeshape] = _target_parse(graph, nodeshape)
 
     # this defines what propertyshapes are parsed, should follow the spec on
@@ -152,11 +151,11 @@ def parse(graph: Graph):
     for propertyshape in propertyshapes:
         path = _extract_parameter_values(graph, propertyshape, SH.path)[0]
         parsed_path = pathalg.parse(graph, path)
-        schema[propertyshape] = _propertyshape_parse(graph, parsed_path,
+        definitions[propertyshape] = _propertyshape_parse(graph, parsed_path,
                                                      propertyshape)
         target[propertyshape] = _target_parse(graph, propertyshape)
 
-    return schema, target
+    return definitions, target
 
 
 def _target_parse(graph: Graph, shapename: URIRef) -> SANode:
@@ -305,7 +304,11 @@ def _tests_parse(graph: Graph, shapename):
                                                                 shapename,
                                                                 SH.flags)]
     for sh_pattern in _extract_parameter_values(graph, shapename, SH.pattern):
-        out.children.append(SANode(Op.TEST, ['pattern', sh_pattern, flags]))
+        escaped_pattern = escape_backslash(sh_pattern)
+        # something strange is going on with character escapes
+        # if a pattern contains a double backslash 'hello\\w' for example
+        # it will be read by the rdflib parser as 'hello\w'
+        out.children.append(SANode(Op.TEST, ['pattern', escaped_pattern, flags]))
 
     return out
 
@@ -508,3 +511,13 @@ def optimize_tree(tree: SANode) -> SANode:
         return optimize_tree(tree.children[0])
 
     return tree
+
+
+def escape_backslash(string):
+    new_string = ''
+    for char in string:
+        if char == '\\':
+            new_string += '\\\\'
+        else:
+            new_string += char
+    return new_string

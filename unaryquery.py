@@ -45,38 +45,25 @@ def _build_closed_query(properties):
 
 
 def _build_disjoint_query(path1, path2):
-    return _build_query(f'''
-{{
-  ?v {path1} ?o1
-  FILTER NOT EXISTS {{ ?v {path1} ?o2 . ?v {path2} ?o2 }}
-}} UNION {{
-  ?v {path2} ?o3
-  FILTER NOT EXISTS {{
-    ?v {path1} ?o4 .
-    ?v {path2} ?o4 }}
-}} UNION {{
-  ?s ?q1 ?v FILTER NOT EXISTS {{ ?v ?q4 ?o9 }}
-}} UNION {{
-  ?v ?q2 ?o5 FILTER NOT EXISTS {{ ?v {path1} ?o6 }}
-}} UNION {{
-  ?v ?q3 ?o7 FILTER NOT EXISTS {{ ?v  {path2}  ?o8 }}
-}}''')
+    '''N_G minus v {p1} o . v {p2} o'''
+    return _build_negate(
+        _build_query(f'''
+    ?v {path1} ?o .
+    ?v {path2} ?o
+'''))
 
 
 def _build_equality_query(path1, path2):
-    return _build_query(f'''
-{{?v {path1} ?o1
-  FILTER NOT EXISTS {{ ?v {path1}  ?o2
-    FILTER NOT EXISTS {{ ?v {path2}  ?o2 }} }} .
-  {{?v {path2} ?o1
-    FILTER NOT EXISTS {{ ?v {path2} ?o3
-      FILTER NOT EXISTS {{ ?v {path1} ?o3 }} }} }}
-}} UNION {{
-  ?s ?q1 ?v FILTER NOT EXISTS {{ ?v ?q4 ?o8 }} .
-}} UNION {{
-  ?v ?q2 ?o4 FILTER NOT EXISTS {{ ?v {path1} ?o5 }} .
-  ?v ?q3 ?o6 FILTER NOT EXISTS {{ ?v {path2} ?o7 }} }}
-''')
+    return _build_negate(
+        _build_query(f'''
+    {{
+      ?v {path1} ?o 
+      FILTER NOT EXISTS {{ ?v {path2} ?o }}
+    }} UNION {{
+      ?v {path2} ?o 
+      FILTER NOT EXISTS {{ ?v {path1} ?o }}
+    }}
+'''))
 
 
 def _build_forall_query(path, shape):
@@ -121,7 +108,15 @@ def _build_hasvalue_query(value):
 
 
 def _build_uniquelang_query(path):
-    raise NotImplementedError()
+    return _build_negate(
+        _build_query(f'''
+SELECT ?v
+WHERE {{
+    ?v {path} ?o1 .
+    ?v {path} ?o2 
+    FILTER ( ?o1 != ?o2 && lang(?o1) = lang(?o2) && lang(?o1) != "" )
+}}
+'''))
 
 
 def _build_test_query(test_type, parameter):

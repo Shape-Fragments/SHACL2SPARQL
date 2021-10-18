@@ -134,7 +134,7 @@ WHERE {{
   ?t {path} ?h .
   {{
     SELECT (?v AS ?h) ?s ?p ?o
-    WHERE {{ {{ {qnp1} . {cqnp1} }} }}
+    WHERE {{ {{ {qnp1} }} . {{ {cqnp1} }} }}
 }} }} }}
 '''
 
@@ -147,10 +147,10 @@ WHERE {{
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
 {{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp1} }} }} .
+  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
   {{ {qe} }}
 }} UNION {{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp1} }} }} .
+  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
   ?t {path} ?h .
   {{
     SELECT (?v AS ?h) ?s ?p ?o
