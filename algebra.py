@@ -186,7 +186,7 @@ def _target_parse(graph: Graph, shapename: URIRef) -> SANode:
             SANode(Op.TOP, [])]))
 
     if not out.children:
-        out.children.append(SANode(Op.NOT, [SANode(Op.TOP, [])]))
+        out = SANode(Op.NOT, [SANode(Op.TOP, [])])
 
     return out
 
@@ -522,6 +522,7 @@ def _escape_backslash(string):
             new_string += char
     return new_string
 
+
 def sa_as_latex(node):
     if node.op == Op.HASSHAPE:
         return f'\mathit{{hasShape}}({str(node.children[0])})'
@@ -586,26 +587,26 @@ def sa_as_latex(node):
 
 
 def pa_as_latex(node):
-    if node.pop == pathalg.Pop.PROP:
+    if node.pop == pathalg.POp.PROP:
         return f'\\mathit{{{node.children[0]}}}'
 
-    if node.pop == pathalg.Pop.KLEENE:
+    if node.pop == pathalg.POp.KLEENE:
         return f'({pa_as_latex(node.children[0])})^*'
 
-    if node.pop == pathalg.Pop.INV:
+    if node.pop == pathalg.POp.INV:
         return f'({pa_as_latex(node.children[0])})^-'
 
-    if node.pop == pathalg.Pop.ZEROORONE:
+    if node.pop == pathalg.POp.ZEROORONE:
         return f'({pa_as_latex(node.children[0])})?'
 
-    if node.pop in {pathalg.Pop.ALT, pathalg.Pop.COMP}:
+    if node.pop in {pathalg.POp.ALT, pathalg.POp.COMP}:
         operator = '\cup'
-        if node.pop == pathalg.Pop.COMP:
+        if node.pop == pathalg.POp.COMP:
             operator = '/'
         out = ''
         children_as_latex = [pa_as_latex(child) for child in node.children]
         for child in children_as_latex:
             out += f'{child} {operator} '
 
-        redundant_space = len(operator + 1)
+        redundant_space = len(operator) + 1
         return f'({out[:-redundant_space]})'
