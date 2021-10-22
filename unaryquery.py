@@ -38,6 +38,7 @@ def _build_exists_query(path):
 
 
 def _build_closed_query(properties):
+    # TODO: moet eigenlijk anders zijn: s p o filter p not in Q
     exist_queries = []
     for prop in properties:
         exist_queries.append(_build_exists_query(prop))

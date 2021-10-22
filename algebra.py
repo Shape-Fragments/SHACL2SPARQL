@@ -304,7 +304,7 @@ def _tests_parse(graph: Graph, shapename):
                                                                 shapename,
                                                                 SH.flags)]
     for sh_pattern in _extract_parameter_values(graph, shapename, SH.pattern):
-        escaped_pattern = escape_backslash(sh_pattern)
+        escaped_pattern = _escape_backslash(sh_pattern)
         # something strange is going on with character escapes
         # if a pattern contains a double backslash 'hello\\w' for example
         # it will be read by the rdflib parser as 'hello\w'
@@ -513,7 +513,7 @@ def optimize_tree(tree: SANode) -> SANode:
     return tree
 
 
-def escape_backslash(string):
+def _escape_backslash(string):
     new_string = ''
     for char in string:
         if char == '\\':
@@ -521,3 +521,91 @@ def escape_backslash(string):
         else:
             new_string += char
     return new_string
+
+def sa_as_latex(node):
+    if node.op == Op.HASSHAPE:
+        return f'\mathit{{hasShape}}({str(node.children[0])})'
+
+    if node.op in {Op.AND, Op.OR}:
+        operator = '\lor '
+        if node.op == Op.OR:
+            operator = '\land'
+        children_as_latex = [sa_as_latex(child) for child in node.children]
+        expr = ''
+        for child in children_as_latex:
+            expr += f' {child} {operator}'
+        return expr[:-6]
+
+    if node.op == Op.NOT:
+        return f'\\neg ({sa_as_latex(node.children[0])})'
+
+    if node.op in {Op.GEQ, Op.LEQ}:
+        operator = '\geq'
+        if node.op == Op.LEQ:
+            operator = '\leq'
+        return f'{operator}_{{{str(node.children[0])}}} {pa_as_latex(node.children[1])} . {sa_as_latex(node.children[2])}'
+
+    if node.op == Op.CLOSED:
+        children_as_latex = [pa_as_latex(child) for child in node.children]
+        args = '\{'
+        for child in children_as_latex:
+            args += f'{child}, '
+        args = args[:-2] + '\}'
+        return f'\mathit{{closed}}({args})'
+
+    if node.op in {Op.DISJ, Op.EQ}:
+        operator = '\mathit{disj}'
+        if node.op == Op.EQ:
+            operator = '\mathit{eq}'
+        return f'{operator}({pa_as_latex(node.children[0])}, {pa_as_latex(node.children[1])})'
+
+    if node.op == Op.FORALL:
+        return f'\\forall {pa_as_latex(node.children[0])} . {sa_as_latex(node.children[1])}'
+
+    if node.op == Op.HASVALUE:
+        return f'\mathit{{hasValue}}({str(node.children[0])})'
+
+    if node.op in {Op.LESSTHAN, Op.LESSTHANEQ}:
+        operator = '\mathit{{lessThan}}'
+        if node.op == Op.LESSTHANEQ:
+            operator = '\mathit{{lessThanEq}}'
+        return f'{operator}({pa_as_latex(node.children[0])}, {pa_as_latex(node.children[1])})'
+
+    if node.op == Op.TOP:
+        return '\\top'
+
+    if node.op == Op.UNIQUELANG:
+        return f'\mathit{{uniqueLang}}({pa_as_latex(node.children[0])})'
+
+    if node.op == Op.TEST:
+        if node.children[0] == 'pattern':
+            return f'\mathit{{test}}(\mathit{{pattern}}, {node.children[1]}, {node.children[2]})'
+        return f'\mathit{{test}}({node.children[0]}, {node.children[1]})'
+
+    raise TypeError('node is ill formed')
+
+
+def pa_as_latex(node):
+    if node.pop == pathalg.Pop.PROP:
+        return f'\\mathit{{{node.children[0]}}}'
+
+    if node.pop == pathalg.Pop.KLEENE:
+        return f'({pa_as_latex(node.children[0])})^*'
+
+    if node.pop == pathalg.Pop.INV:
+        return f'({pa_as_latex(node.children[0])})^-'
+
+    if node.pop == pathalg.Pop.ZEROORONE:
+        return f'({pa_as_latex(node.children[0])})?'
+
+    if node.pop in {pathalg.Pop.ALT, pathalg.Pop.COMP}:
+        operator = '\cup'
+        if node.pop == pathalg.Pop.COMP:
+            operator = '/'
+        out = ''
+        children_as_latex = [pa_as_latex(child) for child in node.children]
+        for child in children_as_latex:
+            out += f'{child} {operator} '
+
+        redundant_space = len(operator + 1)
+        return f'({out[:-redundant_space]})'
