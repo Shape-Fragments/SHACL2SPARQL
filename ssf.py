@@ -28,11 +28,12 @@ def _cmd_help():
     print('    --bvg shape file')
     print('        be default shows the SPARQL query representing the neighborhood')
     print('        of shape')
-    print('    --parser [-ne] shape file')
+    print('    --parser [-neo] shape file')
     print('        by default parses the shape to an S-expression. Options -ne can')
     print('        be used simultaneously')
     print('        -n    puts the S-expression in negation normal form')
     print('        -e    expands the shape references of the S-expression')
+    print('        -o    optimizes the S-expression')
     print('    --latex shape file')
     print('        (experimental) outputs the shape algebra as a LaTeX formula')
     print('    --info file')
@@ -148,10 +149,12 @@ def _cmd_parser():
 
     option_n = False
     option_e = False
+    option_o = False
     if len(sys.argv) == 5:
         option_n = 'n' in sys.argv[-3]
         option_e = 'e' in sys.argv[-3]
-        if not (option_e or option_n):
+        option_o = 'o' in sys.argv[-3]
+        if not (option_e or option_n or option_o):
             print(f'No valid options found in {sys.argv[-3]}')
             exit(1)
 
@@ -164,8 +167,9 @@ def _cmd_parser():
         out = algebra.expand_shape(definitions, out)
     if option_n:
         out = algebra.negation_normal_form(out)
-
-    print(algebra.optimize_tree(out))
+    if option_o:
+        out = algebra.optimize_tree(out)
+    print(out)
     exit(0)
 
 
@@ -219,6 +223,7 @@ def _cmd_info():
 
     exit(0)
 
+
 if __name__ == '__main__':
     argc = len(sys.argv)
 
@@ -234,6 +239,6 @@ if __name__ == '__main__':
     elif '--info' in sys.argv and argc == 3:
         _cmd_info()
 
-    _cmd_help()
+        _cmd_help()
 
     exit(0)

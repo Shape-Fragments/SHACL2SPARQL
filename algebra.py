@@ -131,28 +131,47 @@ def negation_normal_form(node):
     return node
 
 
+def _extract_nodeshapes(graph: Graph):
+    # this defines what nodeshapes are parsed, should follow the spec on what a
+    # node shape is. (of type sh:NodeShape, object of sh:node, objects of sh:not...)
+    nodeshapes = list(graph.subjects(RDF.type, SH.NodeShape)) + \
+                 list(graph.objects(predicate=SH.node)) + \
+                 list(graph.objects(predicate=SH.qualifiedValueShape)) + \
+                 list(graph.objects(predicate=SH['not']))
+
+    # also members of a shacl list which are objects of sh:and, sh:or, sh:xone
+    logical_lists = list(graph.objects(predicate=SH['or'])) + \
+                    list(graph.objects(predicate=SH['and'])) + \
+                    list(graph.objects(predicate=SH.xone))
+
+    for llist in logical_lists:
+        for shapename in Collection(graph, llist):
+            if SH.path not in graph.predicates(shapename):
+                nodeshapes.append(shapename)
+
+    return nodeshapes
+
 def parse(graph: Graph):
     definitions = {}  # a mapping: shapename, SANode
     target = {}  # a mapping: shapename, target shape
 
-    # this defines what nodeshapes are parsed, should follow the spec on what a
-    # node shape is. (of type sh:NodeShape, object of sh:node, ...)
-    nodeshapes = list(graph.subjects(RDF.type, SH.NodeShape)) + \
-                 list(graph.objects(predicate = SH.node)) + \
-                 list(graph.objects(predicate = SH.qualifiedValueShape))
+    nodeshapes = _extract_nodeshapes(graph)
+
     for nodeshape in nodeshapes:
         definitions[nodeshape] = _nodeshape_parse(graph, nodeshape)
         target[nodeshape] = _target_parse(graph, nodeshape)
 
     # this defines what propertyshapes are parsed, should follow the spec on
-    # what a propertyshape is. (of type sh:property, object of sh:property)
+    # what a propertyshape is. (of type sh:property, subjects of sh:path, object of sh:property)
     propertyshapes = list(graph.subjects(RDF.type, SH.PropertyShape)) + \
-                     list(graph.objects(predicate = SH.property))
+                     list(graph.objects(predicate = SH.property)) + \
+                     list(graph.subjects(SH.path))
+
     for propertyshape in propertyshapes:
         path = _extract_parameter_values(graph, propertyshape, SH.path)[0]
         parsed_path = pathalg.parse(graph, path)
         definitions[propertyshape] = _propertyshape_parse(graph, parsed_path,
-                                                     propertyshape)
+                                                          propertyshape)
         target[propertyshape] = _target_parse(graph, propertyshape)
 
     return definitions, target
@@ -497,6 +516,32 @@ def optimize_tree(tree: SANode) -> SANode:
     if tree.op == Op.AND and any(map(lambda c: c.op == Op.TOP, tree.children)):
         tree.children = list(filter(lambda c: c.op != Op.TOP, tree.children))
         return optimize_tree(tree)
+
+    # if there is an AND node with AND children, merge them to one AND
+    if tree.op == Op.AND and any(map(lambda c: c.op == Op.AND, tree.children)):
+        new_children = []
+        for child in tree.children:
+            if child.op == Op.AND:
+                new_children.extend(child.children)
+            else:
+                new_children.append(child)
+        tree.children = new_children
+        return optimize_tree(tree)
+
+    # if there is an OR node with OR children, merge them to one OR
+    if tree.op == Op.OR and any(map(lambda c: c.op == Op.OR, tree.children)):
+        new_children = []
+        for child in tree.children:
+            if child.op == Op.OR:
+                new_children.extend(child.children)
+            else:
+                new_children.append(child)
+        tree.children = new_children
+        return optimize_tree(tree)
+
+    # remove a disjunction between TOPs
+    if tree.op == Op.OR and all(map(lambda c: c.op == Op.TOP, tree.children)):
+        return None
 
     if tree.op == Op.FORALL and len(tree.children) == 1:
         return None
