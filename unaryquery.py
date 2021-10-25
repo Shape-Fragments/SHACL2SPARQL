@@ -38,11 +38,12 @@ def _build_exists_query(path):
 
 
 def _build_closed_query(properties):
-    # TODO: moet eigenlijk anders zijn: s p o filter p not in Q
-    exist_queries = []
+    propstr = ''
     for prop in properties:
-        exist_queries.append(_build_exists_query(prop))
-    return _build_negate(_build_union(exist_queries))
+        propstr += prop + ', '
+    return _build_query(f'''
+    ?s ?p ?o FILTER ?p NOT IN ( {propstr[:-2]} )
+''')
 
 
 def _build_disjoint_query(path1, path2):
@@ -85,11 +86,19 @@ def _build_geq_query(num, path, shape):
 ''') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
 
+def _build_geq_top_query(num, path):
+    return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
+
+
 def _build_leq_query(num, path, shape):
     return _build_query(f'''
 ?v {path} ?o .
 {{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
 ''') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+
+
+def _build_leq_top_query(num, path):
+    return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
 
 
 def _build_lt_query(path, prop):
@@ -242,13 +251,17 @@ def to_uq(node: SANode) -> str:
                                    to_uq(node.children[1]))
 
     if node.op == Op.GEQ:
-        return _build_geq_query(node.children[0],
-                                to_path(node.children[1]),
+        path = to_path(node.children[1])
+        if node.children[2].op == Op.TOP:
+            return _build_geq_top_query(node.children[0], path)
+        return _build_geq_query(node.children[0], path,
                                 to_uq(node.children[2]))
 
     if node.op == Op.LEQ:
-        return _build_leq_query(node.children[0],
-                                to_path(node.children[1]),
+        path = to_path(node.children[1])
+        if node.children[2].op == Op.TOP:
+            return _build_leq_top_query(node.children[0], path)
+        return _build_leq_query(node.children[0], path,
                                 to_uq(node.children[2]))
 
     if node.op == Op.LESSTHAN:

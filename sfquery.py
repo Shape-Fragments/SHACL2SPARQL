@@ -100,6 +100,16 @@ def to_sfquery(node):
         qe = graph_paths(node.children[1])
         path = unaryquery.to_path(node.children[1])
         qp1 = to_sfquery(node.children[2])
+
+        # If node is of the form geq_n E.TOP, we do not need to retrieve psi
+        # we also do not need to conformance check for psi
+        if node.children[2].op == Op.TOP:
+            return f'''
+SELECT (?t AS ?v) ?s ?p ?o
+WHERE {{
+  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+  {{ {qe} }} }}
+'''
         return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
@@ -122,6 +132,13 @@ WHERE {{
         qnp1 = to_sfquery(np1)
         path = unaryquery.to_path(node.children[1])
 
+        # If the statement is of the form leq_n E.TOP, then nothing is returned
+        # in terms of the neighborhood
+        if node.children[2].op == Op.TOP:
+            return f'''
+            SELECT ?v ?s ?p ?o
+            WHERE {{ {cqp} }}
+            '''
         return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
@@ -247,4 +264,4 @@ WHERE {{
   {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER !( ?h2 <= ?h ) }}
 }} }}
 '''
-    return unaryquery.to_uq(node)  # when Op is TOP or TEST etc
+    return unaryquery.to_uq(node)  # when Op is TOP or TEST etc TODO: waarom? Dit zou s p o moeten binden
