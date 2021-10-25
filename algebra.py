@@ -1,9 +1,9 @@
 import mypy
-from typing import List
+from typing import List, Optional, Dict
 from enum import Enum, auto
 
 from rdflib import Graph
-from rdflib.term import URIRef, Literal, BNode
+from rdflib.term import URIRef, Literal, BNode, Identifier
 from rdflib.namespace import SH, RDF
 from rdflib.collection import Collection
 
@@ -58,14 +58,7 @@ class SANode:  # Shape Algebra Node
         return out
 
 
-class Shape:
-    def __init__(self, target: SANode, name: URIRef, expression: SANode):
-        self.expr = expression
-        self.target = target
-        self.name = name
-
-
-def expand_shape(definitions, node):
+def expand_shape(definitions: Dict, node: SANode) -> SANode:
     '''Removes all hasshape references and replaces them with shapes'''
 
     if node.op == Op.HASSHAPE:
@@ -82,7 +75,7 @@ def expand_shape(definitions, node):
     return SANode(node.op, new_children)
 
 
-def negation_normal_form(node):
+def negation_normal_form(node: SANode) -> SANode:
     # The input should be a node without hasshape constructor (expanded)
     if node.op != Op.NOT:
         new_children = []
@@ -131,7 +124,7 @@ def negation_normal_form(node):
     return node
 
 
-def _extract_nodeshapes(graph: Graph):
+def _extract_nodeshapes(graph: Graph) -> List[Identifier]:
     # this defines what nodeshapes are parsed, should follow the spec on what a
     # node shape is. (of type sh:NodeShape, object of sh:node, objects of sh:not...)
     nodeshapes = list(graph.subjects(RDF.type, SH.NodeShape)) + \
@@ -177,7 +170,7 @@ def parse(graph: Graph):
     return definitions, target
 
 
-def _target_parse(graph: Graph, shapename: URIRef) -> SANode:
+def _target_parse(graph: Graph, shapename: Identifier) -> SANode:
     # TODO in paper: target parse in loop/ what if more targets?
     out = SANode(Op.OR, [])
     for tnode in _extract_parameter_values(graph, shapename, SH.targetNode):
@@ -210,7 +203,7 @@ def _target_parse(graph: Graph, shapename: URIRef) -> SANode:
     return out
 
 
-def _nodeshape_parse(graph: Graph, shapename: URIRef) -> SANode:
+def _nodeshape_parse(graph: Graph, shapename: Identifier) -> SANode:
     return SANode(Op.AND, [_shape_parse(graph, shapename),
                            _logic_parse(graph, shapename),
                            _tests_parse(graph, shapename),
@@ -220,7 +213,7 @@ def _nodeshape_parse(graph: Graph, shapename: URIRef) -> SANode:
 
 
 def _propertyshape_parse(graph: Graph, path: pathalg.PANode,
-                         shapename: URIRef) -> SANode:
+                         shapename: Identifier) -> SANode:
     return SANode(Op.AND, [_card_parse(graph, path, shapename),
                            _pair_parse(graph, path, shapename),
                            _qual_parse(graph, path, shapename),
@@ -228,14 +221,14 @@ def _propertyshape_parse(graph: Graph, path: pathalg.PANode,
                            _lang_parse(graph, path, shapename)])
 
 
-def _shape_parse(graph: Graph, shapename):
+def _shape_parse(graph: Graph, shapename: Identifier) -> SANode:
     shapes = list(graph.objects(shapename, SH.node))
     shapes += list(graph.objects(shapename, SH.property))
     conjunction = [SANode(Op.HASSHAPE, [shape]) for shape in shapes]
     return SANode(Op.AND, conjunction)
 
 
-def _logic_parse(graph: Graph, shapename):
+def _logic_parse(graph: Graph, shapename: Identifier) -> SANode:
     # TODO: RDFlib does not like empty lists. It cannot parse an empty
     # rdf list
     out = SANode(Op.AND, [])
@@ -268,7 +261,7 @@ def _logic_parse(graph: Graph, shapename):
     return out
 
 
-def _tests_parse(graph: Graph, shapename):
+def _tests_parse(graph: Graph, shapename: Identifier) -> SANode:
     # TODO: for now, sh:class only works naively
     out = SANode(Op.AND, [])
 
@@ -332,14 +325,14 @@ def _tests_parse(graph: Graph, shapename):
     return out
 
 
-def _value_parse(graph: Graph, shapename):
+def _value_parse(graph: Graph, shapename: Identifier) -> SANode:
     out = SANode(Op.AND, [])
     for sh_value in _extract_parameter_values(graph, shapename, SH.hasValue):
         out.children.append(SANode(Op.HASVALUE, [sh_value]))
     return out
 
 
-def _in_parse(graph: Graph, shapename):
+def _in_parse(graph: Graph, shapename: Identifier) -> SANode:
     out = SANode(Op.AND, [])
     for sh_in in _extract_parameter_values(graph, shapename, SH['in']):
         shacl_list = Collection(graph, sh_in)
@@ -350,7 +343,7 @@ def _in_parse(graph: Graph, shapename):
     return out
 
 
-def _closed_parse(graph: Graph, shapename):
+def _closed_parse(graph: Graph, shapename: Identifier) -> SANode:
     if (shapename, SH.closed, Literal(True)) not in graph:
         return SANode(Op.TOP, [])
 
@@ -372,7 +365,7 @@ def _closed_parse(graph: Graph, shapename):
     return SANode(Op.CLOSED, children)
 
 
-def _card_parse(graph: Graph, path: pathalg.PANode, shapename):
+def _card_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SANode:
     out = SANode(Op.AND, [])
     for min_card in _extract_parameter_values(graph, shapename, SH.minCount):
         out.children.append(SANode(Op.GEQ, [min_card, path,
@@ -385,7 +378,7 @@ def _card_parse(graph: Graph, path: pathalg.PANode, shapename):
     return out
 
 
-def _pair_parse(graph: Graph, path: pathalg.PANode, shapename):
+def _pair_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SANode:
     out = SANode(Op.AND, [])
 
     # sh:equals
@@ -412,7 +405,7 @@ def _pair_parse(graph: Graph, path: pathalg.PANode, shapename):
     return out
 
 
-def _qual_parse(graph: Graph, path: pathalg.PANode, shapename):
+def _qual_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SANode:
     qual = _extract_parameter_values(graph, shapename,
                                      SH.qualifiedValueShape)
     qual_min = _extract_parameter_values(graph, shapename,
@@ -448,7 +441,7 @@ def _qual_parse(graph: Graph, path: pathalg.PANode, shapename):
     return out
 
 
-def _all_parse(graph: Graph, path: pathalg.PANode, shapename):
+def _all_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SANode:
     return SANode(Op.AND, [
         SANode(Op.FORALL, [path,
                            SANode(Op.AND, [_shape_parse(graph, shapename),
@@ -459,7 +452,7 @@ def _all_parse(graph: Graph, path: pathalg.PANode, shapename):
         SANode(Op.GEQ, [Literal(1), path, _value_parse(graph, shapename)])])
 
 
-def _lang_parse(graph: Graph, path: pathalg.PANode, shapename):
+def _lang_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SANode:
     out = SANode(Op.AND, [])
 
     # sh:languageIn
@@ -477,11 +470,11 @@ def _lang_parse(graph: Graph, path: pathalg.PANode, shapename):
     return out
 
 
-def _extract_parameter_values(graph: Graph, shapename, parameter):
+def _extract_parameter_values(graph: Graph, shapename: Identifier, parameter: URIRef):
     return list(graph.objects(shapename, parameter))
 
 
-def optimize_tree(tree: SANode) -> SANode:
+def optimize_tree(tree: SANode) -> Optional[SANode]:
     """
     go through tree in post-order
     remove empty conjunctions,
