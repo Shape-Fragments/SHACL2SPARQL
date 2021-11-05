@@ -129,56 +129,55 @@ WHERE {{
 '''))
 
 
-def _build_test_query(test_type, parameter):
+def _build_filter_condition(test_type, parameter, pattern_flags=[], negate=False):
+    neg = ''
+    if negate:
+        neg = '!'
+
+    if test_type == 'pattern':
+        fmt_flags = ''
+        for flag in pattern_flags:
+            fmt_flags += str(flag)
+        return f'({neg}regex(?v, "{str(parameter)}", "{fmt_flags}"))'
+
     if test_type == 'datatype':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER (datatype(?v) = <{str(parameter)}>)')
+        return f'({neg}(datatype(?v) = <{str(parameter)}>))'
     if test_type == 'nodekind':
         if parameter == SH.IRI:
-            return _build_query(
-                f'{{ {_build_all_query()} }} FILTER isIRI(?v)')
+            return f'({neg}isIRI(?v))'
         if parameter == SH.Literal:
-            return _build_query(
-                f'{{ {_build_all_query()} }} FILTER isLiteral(?v)')
+            return f'({neg}isLiteral(?v))'
         if parameter == SH.BlankNode:
-            return _build_query(
-                f'{{ {_build_all_query()} }} FILTER isBlank(?v)')
+            return f'({neg}isBlank(?v))'
         if parameter == SH.BlankNodeOrIRI:
-            return _build_query(
-                f'{{ {_build_all_query()} }} FILTER (isIRI(?v) || isBlank(?v))')
+            return f'({neg}(isIRI(?v) || isBlank(?v)))'
         if parameter == SH.BlankNodeOrLiteral:
-            return _build_query(
-                f'{{ {_build_all_query()} }} FILTER (isBlank(?v) || isLiteral(?v))')
+            return f'({neg}(isBlank(?v) || isLiteral(?v)))'
         if parameter == SH.IRIOrLiteral:
-            return _build_query(
-                f'{{ {_build_all_query()} }} FILTER (isIRI(?v) || isLiteral(?v))')
+            return f'({neg}(isIRI(?v) || isLiteral(?v)))'
 
     if test_type == 'min_exclusive':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ( ?v > {str(parameter)} )')
+        return f'({neg}( ?v > {str(parameter)} ))'
     if test_type == 'max_exclusive':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ( ?v < {str(parameter)} )')
+        return f'({neg}( ?v < {str(parameter)} ))'
     if test_type == 'min_inclusive':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ( ?v >= {str(parameter)} )')
+        return f'({neg}( ?v >= {str(parameter)} ))'
     if test_type == 'max_inclusive':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ( ?v <= {str(parameter)} )')
+        return f'({neg}( ?v <= {str(parameter)} ))'
     if test_type == 'min_length':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ( strlen(?v) >= {str(parameter)} )')
+        return f'({neg}( strlen(?v) >= {str(parameter)} ))'
     if test_type == 'max_length':
-        return _build_query(
-            f'{{ {_build_all_query()} }} FILTER ( strlen(?v) <= {str(parameter)} )')
+        return f'({neg}( strlen(?v) <= {str(parameter)} ))'
 
 
-def _build_pattern_query(pattern, flags):
-    fmt_flags = ''
-    for flag in flags:
-        fmt_flags += str(flag)
+def _build_test_query(test_type, parameter, negate=False):
     return _build_query(
-        f'{{ {_build_all_query()} }} FILTER regex(?v, "{str(pattern)}", "{fmt_flags}")')
+        f'{{ {_build_all_query()} }} FILTER {_build_filter_condition(test_type, parameter, negate=negate)}')
+
+
+def _build_pattern_query(pattern, flags, negate=False):
+    return _build_query(
+        f'{{ {_build_all_query()} }} FILTER {_build_filter_condition("pattern", pattern, pattern_flags=flags, negate=negate)}')
 
 
 def to_path(node: PANode) -> str:
@@ -217,18 +216,56 @@ def to_uq(node: SANode) -> str:
         return _build_all_query()
 
     if node.op == Op.AND:
+        others = [child for child in node.children if child.op != Op.TEST]
         subqueries = []
-        for child in node.children:
+        for child in others:
             subqueries.append(to_uq(child))
+
+        # Optimization: an and of tests is a test of ands
+        tests = [child for child in node.children if child.op == Op.TEST]
+        conj_tests = '( '
+        for test in tests:
+            if test.children[0] == 'pattern':
+                conj_tests += _build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
+                                                      negate=False) + ' && '
+            else:
+                conj_tests += _build_filter_condition(test.children[0], test.children[1]) + ' && '
+        conj_tests = conj_tests[:-4] + ' )'
+
+        subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {conj_tests}'))
+
         return _build_join(subqueries)
 
     if node.op == Op.OR:
+        others = [child for child in node.children if child.op != Op.TEST]
         subqueries = []
-        for child in node.children:
+        for child in others:
             subqueries.append(to_uq(child))
+
+        # Optimization: an or of tests is a test of ors
+        tests = [child for child in node.children if child.op == Op.TEST]
+        disj_tests = '( '
+        for test in tests:
+            if test.children[0] == 'pattern':
+                disj_tests += _build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
+                                                      negate=False) + ' || '
+            else:
+                disj_tests += _build_filter_condition(test.children[0], test.children[1]) + ' || '
+        disj_tests = disj_tests[:-4] + ' )'
+
+        subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {disj_tests}'))
+
         return _build_union(subqueries)
 
     if node.op == Op.NOT:
+        child = node.children[0]
+        # Optimization: if the shape is of the form: NOT TEST,
+        # then we alter the test itself instead of ALL minus TEST
+        if child.op == Op.TEST:
+            if child.children[0] == 'pattern':
+                return _build_pattern_query(child.children[1], child.children[2])
+            return _build_test_query(child.children[0], child.children[1])
+        # For all other cases:
         return _build_difference_query(_build_all_query(),
                                        to_uq(node.children[0]))
 

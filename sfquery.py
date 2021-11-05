@@ -87,7 +87,8 @@ WHERE {{
 
 
 def to_sfquery(node):
-    if node.op in [Op.AND, Op.OR]:
+    # Optimization: OR does not need conformance
+    if node.op == Op.OR:
         qps = ''
         for child in node.children:
             qps += f'{{ {to_sfquery(child)} }} UNION '
@@ -95,50 +96,67 @@ def to_sfquery(node):
 
     cqp = unaryquery.to_uq(node)
 
+    if node.op == Op.AND:
+        qps = ''
+        for child in node.children:
+            qps += f'{{ {to_sfquery(child)} }} UNION '
+        return f'''
+        SELECT ?v ?s ?p ?o 
+        WHERE {{ 
+            {{ {cqp} }} . 
+            {{
+                SELECT ?v ?s ?p ?o 
+                WHERE {{
+                    {qps[:-6]} 
+                }}
+            }}
+        }}'''
+
     if node.op == Op.GEQ:
         cqp1 = unaryquery.to_uq(node.children[2])
-        qe = graph_paths(node.children[1])
         path = unaryquery.to_path(node.children[1])
         qp1 = to_sfquery(node.children[2])
+        # Optimization: If node is of the form geq_n E.TEST we should incorporate the test
+        # in the graph_paths query.
+        qe = graph_paths(node.children[1])
 
-        # If node is of the form geq_n E.TOP, we do not need to retrieve psi
+        if node.children[2].op == Op.TEST:
+            return f'''
+            SELECT (?t AS ?v) ?s ?p ?o
+            WHERE {{
+              {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+              {{ {qe} }} }}
+            '''
+
+        # Optimization: If node is of the form geq_n E.TOP, we do not need to retrieve psi
         # we also do not need to conformance check for psi
         if node.children[2].op == Op.TOP:
             return f'''
-SELECT (?t AS ?v) ?s ?p ?o
-WHERE {{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  {{ {qe} }} }}
-'''
+            SELECT (?t AS ?v) ?s ?p ?o
+            WHERE {{
+                {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+                {{ {qe} }} 
+            }}'''
         return f'''
-SELECT (?t AS ?v) ?s ?p ?o
-WHERE {{
-{{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  {{ {qe} }} .
-  {{ SELECT (?v AS ?h) WHERE {{ {cqp1} }} }}
-}} UNION {{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  ?t {path} ?h .
-  {{
-    SELECT (?v AS ?h) ?s ?p ?o
-    WHERE {{ {{ {qp1} }} . {{ {cqp1} }} }}
-}} }} }}
-'''
-    if node.op == Op.LEQ:
+        SELECT (?t AS ?v) ?s ?p ?o
+        WHERE {{ {{
+        {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+        {{ {qe} }} .
+        {{ SELECT (?v AS ?h) WHERE {{ {cqp1} }} }}
+        }} UNION {{
+        {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+        ?t {path} ?h .
+        {{ SELECT (?v AS ?h) ?s ?p ?o
+           WHERE {{ {{ {qp1} }} .  {{ {cqp1} }} }} }} }} }} '''
+
+    # If the statement is of the form leq_n E.TOP, then nothing is returned
+    if node.op == Op.LEQ and node.children[2].op != Op.TOP:
         qe = graph_paths(node.children[1])
         np1 = negation_normal_form(SANode(Op.NOT, [node.children[2]]))
         cqnp1 = unaryquery.to_uq(np1)
         qnp1 = to_sfquery(np1)
         path = unaryquery.to_path(node.children[1])
 
-        # If the statement is of the form leq_n E.TOP, then nothing is returned
-        # in terms of the neighborhood
-        if node.children[2].op == Op.TOP:
-            return f'''
-            SELECT ?v ?s ?p ?o
-            WHERE {{ {cqp} }}
-            '''
         return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
@@ -193,11 +211,10 @@ WHERE {{
             for prop in child.children:
                 notinlist += f'{str(prop)} ,'
             notinlist = f'( {notinlist[:-1]} )'
-
+        # Optimization: we do not need conformance
             return f'''
 SELECT ?v (?v AS ?s) ?p ?o
 WHERE {{
-{{ {cqp} }} .
 ?v ?p ?o .
 FILTER (?p NOT IN {notinlist})
 }}
@@ -222,46 +239,48 @@ FILTER (?h != ?h2 && lang(?h) = lang(?h2))
             prop = unaryquery.to_path(child.children[1])  # p
 
             if child.op == Op.EQ:
+                # Optimization: no conformance needed
                 return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
-{{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-{{
   {{ {{ {qe} }} MINUS {{ ?t {prop} ?h }} }}
   UNION
-  {{ {{ {qp} }} MINUS {{ ?t {path} ?h }} }} }} }}
+  {{ {{ {qp} }} MINUS {{ ?t {path} ?h }} }} 
+}} 
 '''
 
             if child.op == Op.DISJ:
+                # Optimization: no conformance needed
                 return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
-{{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-{{
   {{ {{ {qe} }} . {{ ?t {prop} ?h }} }}
   UNION
-  {{ {{ {qp} }} . {{ ?t {path} ?h }} }} }} }}
+  {{ {{ {qp} }} . {{ ?t {path} ?h }} }} }}
 '''
             if child.op == Op.LESSTHAN:
+                # Optimization: no conformance needed
                 return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
-{{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-{{
-  {{ {{ {qe} }} . {{ ?t {prop} ?h2 }} FILTER !( ?h < ?h2 ) }}
+  {{ {{ {qe} }} . {{ ?t {prop} ?h2 }} FILTER (!( ?h < ?h2 )) }}
   UNION
-  {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER !( ?h2 < ?h ) }}
-}} }}
+  {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER (!( ?h2 < ?h )) }}
+}} 
 '''
-            if child.op == Op.LESSTHAN:
+            if child.op == Op.LESSTHANEQ:
+                # Optimization: no conformance needed
                 return f'''
 SELECT (?t AS ?v) ?s ?p ?o
 WHERE {{
-{{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-{{
-  {{ {{ {qe} }} . {{ ?t {prop} ?h2 }} FILTER !( ?h <= ?h2 ) }}
+  {{ {{ {qe} }} . {{ ?t {prop} ?h2 }} FILTER (!( ?h <= ?h2 )) }}
   UNION
-  {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER !( ?h2 <= ?h ) }}
-}} }}
+  {{ {{ {qp} }} . {{ ?t {path} ?h2 }} FILTER (!( ?h2 <= ?h )) }}
+}}
 '''
-    return unaryquery.to_uq(node)  # when Op is TOP or TEST etc TODO: waarom? Dit zou s p o moeten binden
+
+    # In all other cases, we return the empty query
+    return '''
+    SELECT ?v ?s ?p ?o
+    WHERE {}
+    '''

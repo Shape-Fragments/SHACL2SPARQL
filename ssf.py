@@ -239,6 +239,6 @@ if __name__ == '__main__':
     elif '--info' in sys.argv and argc == 3:
         _cmd_info()
 
-        _cmd_help()
+    _cmd_help()
 
     exit(0)
