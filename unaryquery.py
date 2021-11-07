@@ -71,23 +71,31 @@ def _build_equality_query(path1, path2):
 def _build_forall_query(path, shape):
     return _build_negate(
         _build_query(f'''
-?v {path} ?o.
-{{
-  SELECT (?v AS ?o)
-  WHERE {{ {_build_negate(shape)} }}
-}}
-'''))
+        ?v {path} ?o.
+        {{
+          SELECT (?v AS ?o)
+          WHERE {{ {_build_negate(shape)} }}
+        }}'''))
+
+
+def _build_forall_test_query(path, neg_filter_condition):
+    return _build_negate(
+        _build_query(f' ?v {path} ?o FILTER {neg_filter_condition} '))
 
 
 def _build_geq_query(num, path, shape):
     return _build_query(f'''
-?v {path} ?o .
-{{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
-''') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
+    ?v {path} ?o .
+    {{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
+    ''') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
 
 def _build_geq_top_query(num, path):
     return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
+
+
+def _build_geq_test_query(num, path, filter_condition):
+    return _build_query(f'?v {path} ?o FILTER {filter_condition}') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
 
 def _build_leq_query(num, path, shape):
@@ -101,6 +109,10 @@ def _build_leq_top_query(num, path):
     return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
 
 
+def _build_leq_test_query(num, path, filter_condition):
+    return _build_query(f'?v {path} ?o FILTER {filter_condition}') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+
+
 def _build_lt_query(path, prop):
     return _build_query(f'''
 ?v {path} ?e FILTER NOT EXISTS {{ ?v {prop} ?p FILTER ( ?p >= ?e )}}
@@ -109,8 +121,7 @@ def _build_lt_query(path, prop):
 
 def _build_lte_query(path, prop):
     return _build_query(f'''
-?v {path} ?e FILTER NOT EXISTS {{ ?v {prop} ?p FILTER ( ?p > ?e )}}
-''')
+    ?v {path} ?e FILTER NOT EXISTS {{ ?v {prop} ?p FILTER ( ?p > ?e )}}''')
 
 
 def _build_hasvalue_query(value):
@@ -120,64 +131,62 @@ def _build_hasvalue_query(value):
 def _build_uniquelang_query(path):
     return _build_negate(
         _build_query(f'''
-SELECT ?v
-WHERE {{
-    ?v {path} ?o1 .
-    ?v {path} ?o2 
-    FILTER ( ?o1 != ?o2 && lang(?o1) = lang(?o2) && lang(?o1) != "" )
-}}
-'''))
+        SELECT ?v
+        WHERE {{
+            ?v {path} ?o1 .
+            ?v {path} ?o2 
+            FILTER ( ?o1 != ?o2 && lang(?o1) = lang(?o2) && lang(?o1) != "" )
+        }}
+        '''))
 
 
-def _build_filter_condition(test_type, parameter, pattern_flags=[], negate=False):
-    neg = ''
-    if negate:
-        neg = '!'
+def build_filter_condition(test_type, parameter, pattern_flags=[], negate=False, var='?v'):
+    neg = '' if not negate else '!'
 
     if test_type == 'pattern':
         fmt_flags = ''
         for flag in pattern_flags:
             fmt_flags += str(flag)
-        return f'({neg}regex(?v, "{str(parameter)}", "{fmt_flags}"))'
+        return f'({neg}regex({var}, "{str(parameter)}", "{fmt_flags}"))'
 
     if test_type == 'datatype':
-        return f'({neg}(datatype(?v) = <{str(parameter)}>))'
+        return f'({neg}(datatype({var}) = <{str(parameter)}>))'
     if test_type == 'nodekind':
         if parameter == SH.IRI:
-            return f'({neg}isIRI(?v))'
+            return f'({neg}isIRI({var}))'
         if parameter == SH.Literal:
-            return f'({neg}isLiteral(?v))'
+            return f'({neg}isLiteral({var}))'
         if parameter == SH.BlankNode:
-            return f'({neg}isBlank(?v))'
+            return f'({neg}isBlank({var}))'
         if parameter == SH.BlankNodeOrIRI:
-            return f'({neg}(isIRI(?v) || isBlank(?v)))'
+            return f'({neg}(isIRI({var}) || isBlank({var})))'
         if parameter == SH.BlankNodeOrLiteral:
-            return f'({neg}(isBlank(?v) || isLiteral(?v)))'
+            return f'({neg}(isBlank({var}) || isLiteral({var})))'
         if parameter == SH.IRIOrLiteral:
-            return f'({neg}(isIRI(?v) || isLiteral(?v)))'
+            return f'({neg}(isIRI({var}) || isLiteral({var})))'
 
     if test_type == 'min_exclusive':
-        return f'({neg}( ?v > {str(parameter)} ))'
+        return f'({neg}( {var} > {str(parameter)} ))'
     if test_type == 'max_exclusive':
-        return f'({neg}( ?v < {str(parameter)} ))'
+        return f'({neg}( {var} < {str(parameter)} ))'
     if test_type == 'min_inclusive':
-        return f'({neg}( ?v >= {str(parameter)} ))'
+        return f'({neg}( {var} >= {str(parameter)} ))'
     if test_type == 'max_inclusive':
-        return f'({neg}( ?v <= {str(parameter)} ))'
+        return f'({neg}( {var} <= {str(parameter)} ))'
     if test_type == 'min_length':
-        return f'({neg}( strlen(?v) >= {str(parameter)} ))'
+        return f'({neg}( strlen({var}) >= {str(parameter)} ))'
     if test_type == 'max_length':
-        return f'({neg}( strlen(?v) <= {str(parameter)} ))'
+        return f'({neg}( strlen({var}) <= {str(parameter)} ))'
 
 
 def _build_test_query(test_type, parameter, negate=False):
     return _build_query(
-        f'{{ {_build_all_query()} }} FILTER {_build_filter_condition(test_type, parameter, negate=negate)}')
+        f'{{ {_build_all_query()} }} FILTER {build_filter_condition(test_type, parameter, negate=negate)}')
 
 
 def _build_pattern_query(pattern, flags, negate=False):
     return _build_query(
-        f'{{ {_build_all_query()} }} FILTER {_build_filter_condition("pattern", pattern, pattern_flags=flags, negate=negate)}')
+        f'{{ {_build_all_query()} }} FILTER {build_filter_condition("pattern", pattern, pattern_flags=flags, negate=negate)}')
 
 
 def to_path(node: PANode) -> str:
@@ -226,10 +235,10 @@ def to_uq(node: SANode) -> str:
         conj_tests = '( '
         for test in tests:
             if test.children[0] == 'pattern':
-                conj_tests += _build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
-                                                      negate=False) + ' && '
+                conj_tests += build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
+                                                     negate=False) + ' && '
             else:
-                conj_tests += _build_filter_condition(test.children[0], test.children[1]) + ' && '
+                conj_tests += build_filter_condition(test.children[0], test.children[1]) + ' && '
         conj_tests = conj_tests[:-4] + ' )'
 
         subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {conj_tests}'))
@@ -247,10 +256,10 @@ def to_uq(node: SANode) -> str:
         disj_tests = '( '
         for test in tests:
             if test.children[0] == 'pattern':
-                disj_tests += _build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
-                                                      negate=False) + ' || '
+                disj_tests += build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
+                                                     negate=False) + ' || '
             else:
-                disj_tests += _build_filter_condition(test.children[0], test.children[1]) + ' || '
+                disj_tests += build_filter_condition(test.children[0], test.children[1]) + ' || '
         disj_tests = disj_tests[:-4] + ' )'
 
         subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {disj_tests}'))
@@ -284,20 +293,46 @@ def to_uq(node: SANode) -> str:
                                      to_path(node.children[1]))
 
     if node.op == Op.FORALL:
+        child = node.children[1]
+        if child.op == Op.TEST:
+            cond = build_filter_condition(
+                child.children[0], child.children[1], negate=True) if child.children[0] != 'pattern' \
+                else build_filter_condition('pattern', child.children[1],
+                                            pattern_flags=child.children[2], negate=True)
+            return _build_forall_test_query(to_path(node.children[0]), cond)
+
         return _build_forall_query(to_path(node.children[0]),
-                                   to_uq(node.children[1]))
+                                   to_uq(child))
 
     if node.op == Op.GEQ:
         path = to_path(node.children[1])
+        # Optimization
         if node.children[2].op == Op.TOP:
             return _build_geq_top_query(node.children[0], path)
+        # Optimization
+        if node.children[2].op == Op.TEST:
+            child = node.children[1]
+            cond = build_filter_condition(
+                child.children[0], child.children[1]) if child.children[0] != 'pattern' \
+                else build_filter_condition('pattern', child.children[1],
+                                            pattern_flags=child.children[2])
+            return _build_geq_test_query(node.children[0], path, cond)
         return _build_geq_query(node.children[0], path,
                                 to_uq(node.children[2]))
 
     if node.op == Op.LEQ:
         path = to_path(node.children[1])
+        # Optimization
         if node.children[2].op == Op.TOP:
             return _build_leq_top_query(node.children[0], path)
+        # Optimization
+        if node.children[2].op == Op.TEST:
+            child = node.children[1]
+            cond = build_filter_condition(
+                child.children[0], child.children[1]) if child.children[0] != 'pattern' \
+                else build_filter_condition('pattern', child.children[1],
+                                            pattern_flags=child.children[2])
+            return _build_leq_test_query(node.children[0], path, cond)
         return _build_leq_query(node.children[0], path,
                                 to_uq(node.children[2]))
 

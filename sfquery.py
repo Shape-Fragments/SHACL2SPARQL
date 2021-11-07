@@ -25,8 +25,8 @@ def graph_paths(node):
         {{ {qe1} }}
         UNION
         {{
-        SELECT (?v AS ?t) (?v AS ?h)
-        WHERE {{ {{ ?v ?_p1 ?_o1 }} UNION {{ ?_s2 ?_p2 ?v }} }}
+        SELECT (?h AS ?t) ?h
+        WHERE {{ {{ ?h ?_p1 ?_o1 }} UNION {{ ?_s2 ?_p2 ?h }} }}
         }} }}'''
 
     if node.pop == POp.ALT:
@@ -35,7 +35,7 @@ def graph_paths(node):
             qes += f'{{ {graph_paths(child)} }} UNION '
         return f'''
         # graph_paths POp.ALT
-        SELECT ?t ?S ?p ?o ?h WHERE {{ {qes[:-6]} }}'''
+        SELECT ?t ?s ?p ?o ?h WHERE {{ {qes[:-6]} }}'''
 
     if node.pop == POp.COMP:
         node = _make_simple_comp(node.children)
@@ -79,8 +79,8 @@ WHERE {{
     SELECT (?t AS ?x1) ?s ?p ?o (?h AS ?x2)
     WHERE {{ {qe1} }}
   }} UNION {{
-    SELECT (?v AS ?t) (?v AS ?h)
-    WHERE {{ {{ ?v ?_p1 ?_o1 }} UNION {{ ?_s2 ?_p2 ?v }} }}
+    SELECT (?h AS ?t) ?h
+    WHERE {{ {{ ?h ?_p1 ?_o1 }} UNION {{ ?_s2 ?_p2 ?h }} }}
   }}
 }}
 '''
@@ -116,18 +116,11 @@ def to_sfquery(node):
         cqp1 = unaryquery.to_uq(node.children[2])
         path = unaryquery.to_path(node.children[1])
         qp1 = to_sfquery(node.children[2])
-        # Optimization: If node is of the form geq_n E.TEST we should incorporate the test
+        # TODO Optimization (??): If node is of the form geq_n E.TEST we should incorporate the test
         # in the graph_paths query.
+        # We do this by adding a filter on the head '?h' in the graph_paths construction
+
         qe = graph_paths(node.children[1])
-
-        if node.children[2].op == Op.TEST:
-            return f'''
-            SELECT (?t AS ?v) ?s ?p ?o
-            WHERE {{
-              {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-              {{ {qe} }} }}
-            '''
-
         # Optimization: If node is of the form geq_n E.TOP, we do not need to retrieve psi
         # we also do not need to conformance check for psi
         if node.children[2].op == Op.TOP:
@@ -157,41 +150,42 @@ def to_sfquery(node):
         qnp1 = to_sfquery(np1)
         path = unaryquery.to_path(node.children[1])
 
+        # TODO: Optimization similar to GEQ wrt TEST
         return f'''
-SELECT (?t AS ?v) ?s ?p ?o
-WHERE {{
-{{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  {{ {qe} }} .
-  {{ SELECT (?v AS ?h) WHERE {{ {cqnp1 } }} }}
-}} UNION {{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  ?t {path} ?h .
-  {{
-    SELECT (?v AS ?h) ?s ?p ?o
-    WHERE {{ {{ {qnp1} }} . {{ {cqnp1} }} }}
-}} }} }}
-'''
+        SELECT (?t AS ?v) ?s ?p ?o
+        WHERE {{
+        {{
+          {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+          {{ {qe} }} .
+          {{ SELECT (?v AS ?h) WHERE {{ {cqnp1 } }} }}
+        }} UNION {{
+          {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+          ?t {path} ?h .
+          {{
+            SELECT (?v AS ?h) ?s ?p ?o
+            WHERE {{ {{ {qnp1} }} . {{ {cqnp1} }} }}
+        }} }} }}
+        '''
 
     if node.op == Op.FORALL:
-        qe = graph_paths(node.children[0])
         path = unaryquery.to_path(node.children[0])
         qp1 = to_sfquery(node.children[1])
 
+        qe = graph_paths(node.children[0])
         return f'''
-SELECT (?t AS ?v) ?s ?p ?o
-WHERE {{
-{{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  {{ {qe} }}
-}} UNION {{
-  {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
-  ?t {path} ?h .
-  {{
-    SELECT (?v AS ?h) ?s ?p ?o
-    WHERE {{ {qp1} }}
-}} }} }}
-'''
+        SELECT (?t AS ?v) ?s ?p ?o
+        WHERE {{
+        {{
+          {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+          {{ {qe} }}
+        }} UNION {{
+          {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+          ?t {path} ?h .
+          {{
+            SELECT (?v AS ?h) ?s ?p ?o
+            WHERE {{ {qp1} }}
+        }} }} }}
+        '''
 
     if node.op == Op.EQ:
         qe = graph_paths(node.children[0])
