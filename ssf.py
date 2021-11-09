@@ -72,7 +72,7 @@ def _get_filename():
 def _get_shapesgraph(filename):
     shapesgraph = Graph()
     try:
-        shapesgraph.parse(filename)
+        shapesgraph.parse(filename, format="ttl")
     except Exception as e:
         print(f'Could not parse file: {filename}')
         print(e)
