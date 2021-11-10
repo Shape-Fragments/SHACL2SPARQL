@@ -4,7 +4,7 @@ from enum import Enum, auto
 
 from rdflib import Graph
 from rdflib.term import URIRef, Literal, BNode, Identifier
-from rdflib.namespace import SH, RDF
+from rdflib.namespace import SH, RDF, RDFS
 from rdflib.collection import Collection
 
 import pathalg
@@ -181,6 +181,12 @@ def _target_parse(graph: Graph, shapename: Identifier) -> SANode:
             Literal(1),
             pathalg.PANode(pathalg.POp.PROP, [RDF.type]),
             SANode(Op.HASVALUE, [tclass])]))
+
+    if (shapename, RDF.type, RDFS.Class) in graph:
+        out.children.append(SANode(Op.GEQ, [
+            Literal(1),
+            pathalg.PANode(pathalg.POp.PROP, [RDF.type]),
+            SANode(Op.HASVALUE, [shapename])]))
 
     for tsub in _extract_parameter_values(graph, shapename,
                                           SH.targetSubjectsOf):
