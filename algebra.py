@@ -144,14 +144,14 @@ def _extract_nodeshapes(graph: Graph) -> List[Identifier]:
 
     return nodeshapes
 
-def parse(graph: Graph):
+def parse(graph: Graph, ignore_tests=False):
     definitions = {}  # a mapping: shapename, SANode
     target = {}  # a mapping: shapename, target shape
 
     nodeshapes = _extract_nodeshapes(graph)
 
     for nodeshape in nodeshapes:
-        definitions[nodeshape] = _nodeshape_parse(graph, nodeshape)
+        definitions[nodeshape] = _nodeshape_parse(graph, nodeshape, ignore_tests=ignore_tests)
         target[nodeshape] = _target_parse(graph, nodeshape)
 
     # this defines what propertyshapes are parsed, should follow the spec on
@@ -164,7 +164,7 @@ def parse(graph: Graph):
         path = _extract_parameter_values(graph, propertyshape, SH.path)[0]
         parsed_path = pathalg.parse(graph, path)
         definitions[propertyshape] = _propertyshape_parse(graph, parsed_path,
-                                                          propertyshape)
+                                                          propertyshape, ignore_tests=ignore_tests)
         target[propertyshape] = _target_parse(graph, propertyshape)
 
     return definitions, target
@@ -209,7 +209,14 @@ def _target_parse(graph: Graph, shapename: Identifier) -> SANode:
     return out
 
 
-def _nodeshape_parse(graph: Graph, shapename: Identifier) -> SANode:
+def _nodeshape_parse(graph: Graph, shapename: Identifier, ignore_tests=False) -> SANode:
+    if ignore_tests:
+        return SANode(Op.AND, [_shape_parse(graph, shapename),
+                               _logic_parse(graph, shapename),
+                               _value_parse(graph, shapename),
+                               _in_parse(graph, shapename),
+                               _closed_parse(graph, shapename)])
+
     return SANode(Op.AND, [_shape_parse(graph, shapename),
                            _logic_parse(graph, shapename),
                            _tests_parse(graph, shapename),
@@ -219,11 +226,11 @@ def _nodeshape_parse(graph: Graph, shapename: Identifier) -> SANode:
 
 
 def _propertyshape_parse(graph: Graph, path: pathalg.PANode,
-                         shapename: Identifier) -> SANode:
+                         shapename: Identifier, ignore_tests=False) -> SANode:
     return SANode(Op.AND, [_card_parse(graph, path, shapename),
                            _pair_parse(graph, path, shapename),
                            _qual_parse(graph, path, shapename),
-                           _all_parse(graph, path, shapename),
+                           _all_parse(graph, path, shapename, ignore_tests=ignore_tests),
                            _lang_parse(graph, path, shapename)])
 
 
@@ -447,7 +454,15 @@ def _qual_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SA
     return out
 
 
-def _all_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier) -> SANode:
+def _all_parse(graph: Graph, path: pathalg.PANode, shapename: Identifier, ignore_tests=False) -> SANode:
+    if ignore_tests:
+        return SANode(Op.AND, [
+            SANode(Op.FORALL, [path,
+                               SANode(Op.AND, [_shape_parse(graph, shapename),
+                                               _logic_parse(graph, shapename),
+                                               _in_parse(graph, shapename),
+                                               _closed_parse(graph, shapename)])]),
+            SANode(Op.GEQ, [Literal(1), path, _value_parse(graph, shapename)])])
     return SANode(Op.AND, [
         SANode(Op.FORALL, [path,
                            SANode(Op.AND, [_shape_parse(graph, shapename),
@@ -566,6 +581,8 @@ def _escape_backslash(string):
             new_string += char
     return new_string
 
+
+# The code below is just for fun
 
 def sa_as_latex(node):
     if node.op == Op.HASSHAPE:

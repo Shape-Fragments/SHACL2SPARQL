@@ -142,7 +142,7 @@ def to_sfquery(node):
         {{ SELECT (?v AS ?h) ?s ?p ?o
            WHERE {{ {{ {qp1} }} .  {{ {cqp1} }} }} }} }} }} '''
 
-    # If the statement is of the form leq_n E.TOP, then nothing is returned
+    # Optimization: If the statement is of the form leq_n E.TOP, then nothing is returned
     if node.op == Op.LEQ and node.children[2].op != Op.TOP:
         qe = graph_paths(node.children[1])
         np1 = negation_normal_form(SANode(Op.NOT, [node.children[2]]))
@@ -150,7 +150,6 @@ def to_sfquery(node):
         qnp1 = to_sfquery(np1)
         path = unaryquery.to_path(node.children[1])
 
-        # TODO: Optimization similar to GEQ wrt TEST
         return f'''
         SELECT (?t AS ?v) ?s ?p ?o
         WHERE {{

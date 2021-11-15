@@ -16,15 +16,16 @@ TODO: cleanup cmd argument parsing, it is very naive atm
 
 def _cmd_help():
     print('Help:')
-    print(f'{sys.argv[0]} [--frag | --bvg shape | --parser [options] shape | --show shape | --latex shape | --info ] file')
+    print(f'{sys.argv[0]} [--frag [-i] | --bvg shape | --parser [-neo] shape | --show shape | --latex shape | --info ] file')
     print('Note: shape should be a prefixed iri where the prefix should be defined in the')
     print('      shapes graph. File should be a filename of a Turtle file containing a')
     print('      shapes graph.')
     print('Description:')
     print('Only one mode can be used at a time.')
-    print('    --frag file')
+    print('    --frag [-i] file')
     print('        shows the SPARQL query representing the Shape Fragment of the')
     print('        shape schema given by file')
+    print('        -i    ignore all test constraints')
     print('    --bvg shape file')
     print('        be default shows the SPARQL query representing the neighborhood')
     print('        of shape')
@@ -84,7 +85,9 @@ def _cmd_frag():
     filename = _get_filename()
     shapesgraph = _get_shapesgraph(filename)
 
-    definitions, targets = algebra.parse(shapesgraph)
+    ignore_tests = '-i' in sys.argv  # if -i is in the options, ignore tests
+
+    definitions, targets = algebra.parse(shapesgraph, ignore_tests=ignore_tests)
 
     # expand every shape that is defined in the schema
     # put the shape in negation normal form
@@ -228,7 +231,7 @@ if __name__ == '__main__':
     argc = len(sys.argv)
 
     # if only a file name or frag
-    if argc == 2 or ('--frag' in sys.argv and argc == 3):
+    if argc == 2 or ('--frag' in sys.argv and argc == 4):
          _cmd_frag()
     elif '--bvg' in sys.argv and argc == 4:
         _cmd_bvg()

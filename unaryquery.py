@@ -216,7 +216,7 @@ def to_path(node: PANode) -> str:
         return '(' + to_path(node.children[0]) + ')+'
 
 
-def to_uq(node: SANode) -> str:
+def to_uq(node: SANode, ignore_tests=False) -> str:
     """to unary query; assumes shape is expanded"""
     if node.op == Op.HASSHAPE:
         raise ValueError('node must be expanded')
@@ -232,7 +232,7 @@ def to_uq(node: SANode) -> str:
 
         # Optimization: an and of tests is a test of ands
         tests = [child for child in node.children if child.op == Op.TEST]
-        if tests:
+        if tests and not ignore_tests:
             conj_tests = '( '
             for test in tests:
                 if test.children[0] == 'pattern':
@@ -254,7 +254,7 @@ def to_uq(node: SANode) -> str:
 
         # Optimization: an or of tests is a test of ors
         tests = [child for child in node.children if child.op == Op.TEST]
-        if tests:
+        if tests and not ignore_tests:
             disj_tests = '( '
             for test in tests:
                 if test.children[0] == 'pattern':
@@ -272,6 +272,9 @@ def to_uq(node: SANode) -> str:
         child = node.children[0]
         # Optimization: if the shape is of the form: NOT TEST,
         # then we alter the test itself instead of ALL minus TEST
+        if child.op == Op.TEST and ignore_tests:
+            return _build_query('')  # the empty query
+
         if child.op == Op.TEST:
             if child.children[0] == 'pattern':
                 return _build_pattern_query(child.children[1], child.children[2])
@@ -296,6 +299,10 @@ def to_uq(node: SANode) -> str:
 
     if node.op == Op.FORALL:
         child = node.children[1]
+
+        if child.op == Op.TEST and ignore_tests:
+            return _build_query('')  # empty query
+
         if child.op == Op.TEST:
             cond = build_filter_condition(
                 child.children[0], child.children[1], negate=True) if child.children[0] != 'pattern' \
@@ -309,8 +316,10 @@ def to_uq(node: SANode) -> str:
     if node.op == Op.GEQ:
         path = to_path(node.children[1])
         # Optimization
-        if node.children[2].op == Op.TOP:
+        if node.children[2].op == Op.TOP or \
+                node.children[2].op == Op.TEST and ignore_tests:
             return _build_geq_top_query(node.children[0], path)
+
         # Optimization
         if node.children[2].op == Op.TEST:
             child = node.children[1]
@@ -325,7 +334,8 @@ def to_uq(node: SANode) -> str:
     if node.op == Op.LEQ:
         path = to_path(node.children[1])
         # Optimization
-        if node.children[2].op == Op.TOP:
+        if node.children[2].op == Op.TOP or \
+                node.children[2].op == Op.TEST and ignore_tests:
             return _build_leq_top_query(node.children[0], path)
         # Optimization
         if node.children[2].op == Op.TEST:
@@ -352,7 +362,9 @@ def to_uq(node: SANode) -> str:
     if node.op == Op.UNIQUELANG:
         return _build_uniquelang_query(to_path(node.children[0]))
 
-    if node.op == Op.TEST:
+    if node.op == Op.TEST and not ignore_tests:
         if node.children[0] == 'pattern':
             return _build_pattern_query(node.children[1], node.children[2])
         return _build_test_query(node.children[0], node.children[1])
+
+    return _build_query('')  # empty query
