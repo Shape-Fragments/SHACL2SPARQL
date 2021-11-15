@@ -231,7 +231,7 @@ if __name__ == '__main__':
     argc = len(sys.argv)
 
     # if only a file name or frag
-    if argc == 2 or ('--frag' in sys.argv and argc == 4):
+    if argc == 2 or ('--frag' in sys.argv and 3 <= argc <= 4):
          _cmd_frag()
     elif '--bvg' in sys.argv and argc == 4:
         _cmd_bvg()
