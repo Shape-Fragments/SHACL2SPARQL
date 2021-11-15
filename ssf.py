@@ -3,10 +3,10 @@
 import sys
 import os
 import algebra
+from algebra import SANode, Op
 
 from rdflib import Graph, URIRef, Namespace
 from sfquery import to_sfquery
-
 '''
 ssf stands for Sparql Shape Fragments
 
@@ -92,12 +92,12 @@ def _cmd_frag():
     # optimize this expression (remove redundancies from algebra)
     prepared_shapes = []
     for shape_name in definitions:
-        if shape_name not in targets:
+        if shape_name not in targets or targets[shape_name] == SANode(Op.NOT, [SANode(Op.TOP, [])]):
             continue  # we ignore the shapes that do not have any targets
 
         prepared_shapes.append(
             algebra.optimize_tree(
-                algebra.SANode(algebra.Op.AND, [
+                SANode(Op.AND, [
                     algebra.negation_normal_form(
                         algebra.expand_shape(definitions, definitions[shape_name])),
                     targets[shape_name]

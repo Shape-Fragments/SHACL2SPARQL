@@ -232,16 +232,17 @@ def to_uq(node: SANode) -> str:
 
         # Optimization: an and of tests is a test of ands
         tests = [child for child in node.children if child.op == Op.TEST]
-        conj_tests = '( '
-        for test in tests:
-            if test.children[0] == 'pattern':
-                conj_tests += build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
-                                                     negate=False) + ' && '
-            else:
-                conj_tests += build_filter_condition(test.children[0], test.children[1]) + ' && '
-        conj_tests = conj_tests[:-4] + ' )'
+        if tests:
+            conj_tests = '( '
+            for test in tests:
+                if test.children[0] == 'pattern':
+                    conj_tests += build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
+                                                         negate=False) + ' && '
+                else:
+                    conj_tests += build_filter_condition(test.children[0], test.children[1]) + ' && '
+            conj_tests = conj_tests[:-4] + ' )'
 
-        subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {conj_tests}'))
+            subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {conj_tests}'))
 
         return _build_join(subqueries)
 
@@ -253,16 +254,17 @@ def to_uq(node: SANode) -> str:
 
         # Optimization: an or of tests is a test of ors
         tests = [child for child in node.children if child.op == Op.TEST]
-        disj_tests = '( '
-        for test in tests:
-            if test.children[0] == 'pattern':
-                disj_tests += build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
-                                                     negate=False) + ' || '
-            else:
-                disj_tests += build_filter_condition(test.children[0], test.children[1]) + ' || '
-        disj_tests = disj_tests[:-4] + ' )'
+        if tests:
+            disj_tests = '( '
+            for test in tests:
+                if test.children[0] == 'pattern':
+                    disj_tests += build_filter_condition('pattern', test.children[1], pattern_flags=test.children[2],
+                                                         negate=False) + ' || '
+                else:
+                    disj_tests += build_filter_condition(test.children[0], test.children[1]) + ' || '
+            disj_tests = disj_tests[:-4] + ' )'
 
-        subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {disj_tests}'))
+            subqueries.append(_build_query(f'{{ {_build_all_query()} }} FILTER {disj_tests}'))
 
         return _build_union(subqueries)
 
