@@ -104,16 +104,41 @@ def _optimize_ignoring_tests(tree: SANode) -> SANode:
 
     tree = SANode(tree.op, new_children)
 
-    if tree.op == Op.AND and any(map(lambda c: c.op == Op.TOP, tree.children)):
-        new_children = list(filter(lambda c: c.op != Op.TOP, tree.children))
-        if len(new_children) == 0:
-            return SANode(Op.TOP, [])
-        elif len(new_children) == 1:
-            return new_children[0]
-        return _optimize_ignoring_tests(SANode(tree.op, new_children))
+    if tree.op == Op.AND:
+        # handle TOP children
+        if any(map(lambda c: c.op == Op.TOP, tree.children)):
+            new_children = list(filter(lambda c: c.op != Op.TOP, tree.children))
+            if len(new_children) == 0:
+                return SANode(Op.TOP, [])
+            elif len(new_children) == 1:
+                return new_children[0]
 
-    if tree.op == Op.OR and all(map(lambda c: c.op == Op.TOP, tree.children)):
-        return SANode(Op.TOP, [])
+        # handle NOT TOP children
+        if any(map(lambda c: c.op == Op.NOT and c.children[0].op == Op.TOP, tree.children)):
+            return SANode(Op.NOT, [SANode(Op.TOP, [])])
+
+    if tree.op == Op.OR:
+        # handle NOT TOP children
+        if any(map(lambda c: c.op == Op.NOT and c.children[0].op == Op.TOP, tree.children)):
+            new_children = list(filter(lambda c: not (c.op == Op.NOT and c.children[0].op == Op.TOP), tree.children))
+            if len(new_children) == 0:
+                return SANode(Op.NOT, [SANode(Op.TOP, [])])
+            elif len(new_children) == 1:
+                return new_children[0]
+
+        # handle multiple TOP
+        if any(map(lambda c: c.op == Op.TOP, tree.children)):
+            new_children = list(filter(lambda c: c.op != Op.TOP, tree.children))
+            if len(new_children) == 0: # they were all TOP
+                return SANode(Op.TOP, [])
+            # they were not all TOP, but we need one to keep conformance semantics
+            new_children.append(SANode(Op.TOP, []))
+            return SANode(Op.OR, new_children)
+
+    if tree.op == Op.NOT:
+        if tree.children[0].op == Op.NOT and \
+                tree.children[0].children[0].op == Op.TOP:
+            return SANode(Op.TOP, [])
 
     return tree
 

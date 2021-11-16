@@ -230,6 +230,11 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
 
         forall_e_top = False
         for child in others:
+            # Optimization: if NOT TOP in conjunction, return empty
+            if child.op == Op.NOT and child.children[0].op == Op.TOP:
+                return _build_query('')  # the empty query
+
+            # Optimization:
             # We often encounter forall E.top when ignoring tests,
             # if we get to such a shape for conformance, we ignore it in the
             # conjunction
@@ -262,7 +267,7 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
         others = [child for child in node.children if child.op != Op.TEST]
         subqueries = []
         for child in others:
-            # If TOP occurs in the disjunction, the conformance query is TOP
+            # Optimization: If TOP occurs in the disjunction, the conformance query is TOP
             if child.op == Op.TOP:
                 return _build_all_query()
             subqueries.append(to_uq(child))
@@ -285,6 +290,10 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
 
     if node.op == Op.NOT:
         child = node.children[0]
+        # Optimization: not TOP is empty conformance
+        if child.op == Op.TOP:
+            return _build_query('')  # the empty query
+
         # Optimization: if the shape is of the form: NOT TEST,
         # then we alter the test itself instead of ALL minus TEST
         if child.op == Op.TEST and ignore_tests:
