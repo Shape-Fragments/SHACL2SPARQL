@@ -81,13 +81,64 @@ def _get_shapesgraph(filename):
     return shapesgraph
 
 
+def _replace_tests_with_top(tree: SANode) -> SANode:
+    new_children = []
+    for child in tree.children:
+        if type(child) == SANode and child.op == Op.TEST:
+            new_children.append(SANode(Op.TOP, []))
+        elif type(child) == SANode: # and not child.op == Op.TEST
+            new_children.append(_replace_tests_with_top(child))
+        else:
+            new_children.append(child)
+    return SANode(tree.op, new_children)
+
+
+def _optimize_ignoring_tests(tree: SANode) -> SANode:
+    new_children = []
+    for child in tree.children:
+        if type(child) == SANode:
+            new_children.append(
+                _optimize_ignoring_tests(child))
+        else:
+            new_children.append(child)
+
+    tree = SANode(tree.op, new_children)
+
+    if tree.op == Op.AND and any(map(lambda c: c.op == Op.TOP, tree.children)):
+        new_children = list(filter(lambda c: c.op != Op.TOP, tree.children))
+        if len(new_children) == 0:
+            return SANode(Op.TOP, [])
+        elif len(new_children) == 1:
+            return new_children[0]
+        return _optimize_ignoring_tests(SANode(tree.op, new_children))
+
+    if tree.op == Op.OR and all(map(lambda c: c.op == Op.TOP, tree.children)):
+        return SANode(Op.TOP, [])
+
+    return tree
+
+
 def _cmd_frag():
     filename = _get_filename()
     shapesgraph = _get_shapesgraph(filename)
 
     ignore_tests = '-i' in sys.argv  # if -i is in the options, ignore tests
 
-    definitions, targets = algebra.parse(shapesgraph, ignore_tests=ignore_tests)
+    # If you ignore tests at parse time, we get a non-intuitive definition of shape neighborhoods
+    # if the parser encounters shapes like for example:
+    # :exampleshape a sh:nodeshape;
+    #   sh:propertyshape [
+    #     sh:path :email ].
+    # (this would occur if there would have been a test on all emails, but it is ignored by the
+    #  parser so it effectively sees the shape above)
+    # then it would translate it to: forall email. TOP
+    # and at parse time, this is indistinguishable from a parsing artifact from the way
+    # we translate from RDF shacl to the algebra. Therefore, it is removed from the parse tree.
+    # There would be no neighborhood for emails, eventhough there would be one if forall email.TOP
+    # is retained in the shape.
+    # TODO: when you actually write a shape like the above, it would be removed at parse time.
+    # The task is to not remove it and retain precisely what we want for the shape fragment
+    definitions, targets = algebra.parse(shapesgraph, ignore_tests=False)
 
     # expand every shape that is defined in the schema
     # put the shape in negation normal form
@@ -106,10 +157,30 @@ def _cmd_frag():
                     targets[shape_name]
                 ])))
 
+    # Until now, everything is processed nicely as usual.
+    # However, when we know we want to ignore tests we can do some nice alterations
+    # on the syntax tree:
+    # 1. Replace every occurrence of a test-node to a top-node
+    # 2. Apply optimizations:
+    #    - remove tops from conjunction
+    #    - remove tops from disjunction (shapefragment-semantically the same BUT not a good optimization!!
+    #      because the tree must be correct wrt conformance at any time...)
+    #    - replace disjunction with only TOPs with TOP
+    #    - replace conjunctions with == 0 children with TOP
+    #    - replace conjunctions with == 1 child with the child
+    if ignore_tests:
+        _it_prepared_shapes = []
+        for shape in prepared_shapes:
+            _tt_shape = _replace_tests_with_top(shape)
+            _it_shape = _optimize_ignoring_tests(_tt_shape)
+            _it_prepared_shapes.append(_it_shape)
+        prepared_shapes = _it_prepared_shapes
+
     # translate every shape to a shape fragment query
     shape_queries = []
     for shape in prepared_shapes:
-        shape_queries.append(to_sfquery(shape))
+        # here, the ignore_tests works only at translation time
+        shape_queries.append(to_sfquery(shape, ignore_tests=False))
 
     # take the union of every query as the total shape fragment query
     fragment_query = 'SELECT ?v ?s ?p ?o WHERE { '

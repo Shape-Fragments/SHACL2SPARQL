@@ -86,7 +86,7 @@ WHERE {{
 '''
 
 
-def to_sfquery(node):
+def to_sfquery(node, ignore_tests=False):
     # Optimization: OR does not need conformance
     if node.op == Op.OR:
         qps = ''
@@ -94,7 +94,7 @@ def to_sfquery(node):
             qps += f'{{ {to_sfquery(child)} }} UNION '
         return f'SELECT ?v ?s ?p ?o WHERE {{ {qps[:-6]} }}'
 
-    cqp = unaryquery.to_uq(node)
+    cqp = unaryquery.to_uq(node, ignore_tests=ignore_tests)
 
     if node.op == Op.AND:
         qps = ''
@@ -113,7 +113,7 @@ def to_sfquery(node):
         }}'''
 
     if node.op == Op.GEQ:
-        cqp1 = unaryquery.to_uq(node.children[2])
+        cqp1 = unaryquery.to_uq(node.children[2], ignore_tests=ignore_tests)
         path = unaryquery.to_path(node.children[1])
         qp1 = to_sfquery(node.children[2])
         # TODO Optimization (??): If node is of the form geq_n E.TEST we should incorporate the test
@@ -146,7 +146,7 @@ def to_sfquery(node):
     if node.op == Op.LEQ and node.children[2].op != Op.TOP:
         qe = graph_paths(node.children[1])
         np1 = negation_normal_form(SANode(Op.NOT, [node.children[2]]))
-        cqnp1 = unaryquery.to_uq(np1)
+        cqnp1 = unaryquery.to_uq(np1, ignore_tests=ignore_tests)
         qnp1 = to_sfquery(np1)
         path = unaryquery.to_path(node.children[1])
 
@@ -167,10 +167,19 @@ def to_sfquery(node):
         '''
 
     if node.op == Op.FORALL:
+        qe = graph_paths(node.children[0])
+        # This often occurs when we "ignore tests"
+        # We do not need conformance because all nodes
+        # conform to forall E.TOP and all nodes conform to TOP.
+        if node.children[1].op == Op.TOP:
+            return f'''
+            SELECT (?t AS ?v) ?s ?p ?o
+            WHERE {{ {{ {qe} }} }}
+            '''
+
         path = unaryquery.to_path(node.children[0])
         qp1 = to_sfquery(node.children[1])
 
-        qe = graph_paths(node.children[0])
         return f'''
         SELECT (?t AS ?v) ?s ?p ?o
         WHERE {{

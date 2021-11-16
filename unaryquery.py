@@ -227,8 +227,20 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
     if node.op == Op.AND:
         others = [child for child in node.children if child.op != Op.TEST]
         subqueries = []
+
+        forall_e_top = False
         for child in others:
+            # We often encounter forall E.top when ignoring tests,
+            # if we get to such a shape for conformance, we ignore it in the
+            # conjunction
+            if child.op == Op.FORALL and child.children[1].op == Op.TOP:
+                forall_e_top = True
+                continue
             subqueries.append(to_uq(child))
+        # because of the ignoring of the tests, we may end up without subqueries
+        # then the conformance query should be TOP
+        if not subqueries and forall_e_top:
+            return _build_all_query()
 
         # Optimization: an and of tests is a test of ands
         tests = [child for child in node.children if child.op == Op.TEST]
@@ -250,6 +262,9 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
         others = [child for child in node.children if child.op != Op.TEST]
         subqueries = []
         for child in others:
+            # If TOP occurs in the disjunction, the conformance query is TOP
+            if child.op == Op.TOP:
+                return _build_all_query()
             subqueries.append(to_uq(child))
 
         # Optimization: an or of tests is a test of ors
@@ -309,6 +324,10 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
                 else build_filter_condition('pattern', child.children[1],
                                             pattern_flags=child.children[2], negate=True)
             return _build_forall_test_query(to_path(node.children[0]), cond)
+
+        # This often occurs when we "ignore tests"
+        if child.op == Op.TOP:
+            return _build_all_query()
 
         return _build_forall_query(to_path(node.children[0]),
                                    to_uq(child))
