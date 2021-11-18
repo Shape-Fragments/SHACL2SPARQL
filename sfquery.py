@@ -65,6 +65,12 @@ WHERE {{
   }}
 }} }}
 '''
+    if node.pop == POp.INV:
+        qe1 = graph_paths(node.children[0])
+        return f'''
+        SELECT (?h AS ?t) ?s ?p ?o (?t AS ?h)
+        WHERE {{ {qe1} }}
+'''
 
     if node.pop == POp.KLEENE:
         qe1 = graph_paths(node.children[0])
