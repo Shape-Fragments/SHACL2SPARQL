@@ -99,18 +99,21 @@ def _build_geq_test_query(num, path, filter_condition):
 
 
 def _build_leq_query(num, path, shape):
-    return _build_query(f'''
+    return _build_negate(
+        _build_query(f'''
 ?v {path} ?o .
 {{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}
-''') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+''') + f' GROUP BY ?v HAVING (COUNT(?o) > {str(num)} )')
 
 
 def _build_leq_top_query(num, path):
-    return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+    return _build_negate(
+        _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) > {str(num)} )')
 
 
 def _build_leq_test_query(num, path, filter_condition):
-    return _build_query(f'?v {path} ?o FILTER {filter_condition}') + f' GROUP BY ?v HAVING (COUNT(?o) <= {str(num)} )'
+    return _build_negate(
+        _build_query(f'?v {path} ?o FILTER {filter_condition}') + f' GROUP BY ?v HAVING (COUNT(?o) > {str(num)} )')
 
 
 def _build_lt_query(path, prop):
