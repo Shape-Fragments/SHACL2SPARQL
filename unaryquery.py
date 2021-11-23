@@ -83,6 +83,10 @@ def _build_forall_test_query(path, neg_filter_condition):
         _build_query(f' ?v {path} ?o FILTER {neg_filter_condition} '))
 
 
+def _build_exactly1_query(path):
+    return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) = 1 )'
+
+
 def _build_geq_query(num, path, shape):
     return _build_query(f'''
     ?v {path} ?o .
@@ -343,6 +347,10 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
 
         return _build_forall_query(to_path(node.children[0]),
                                    to_uq(child))
+
+    if node.op == Op.EXACTLY1:
+        path = to_path(node.children[0])
+        return _build_exactly1_query(path)
 
     if node.op == Op.GEQ:
         path = to_path(node.children[1])

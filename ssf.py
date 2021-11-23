@@ -7,6 +7,7 @@ from algebra import SANode, Op
 
 from rdflib import Graph, URIRef, Namespace
 from sfquery import to_sfquery
+
 '''
 ssf stands for Sparql Shape Fragments
 
@@ -16,7 +17,8 @@ TODO: cleanup cmd argument parsing, it is very naive atm
 
 def _cmd_help():
     print('Help:')
-    print(f'{sys.argv[0]} [--frag [-i] | --bvg shape | --parser [-neo] shape | --show shape | --latex shape | --info ] file')
+    print(
+        f'{sys.argv[0]} [--frag [-i] | --bvg shape | --parser [-neo] shape | --show shape | --latex shape | --info ] file')
     print('Note: shape should be a prefixed iri where the prefix should be defined in the')
     print('      shapes graph. File should be a filename of a Turtle file containing a')
     print('      shapes graph.')
@@ -86,7 +88,7 @@ def _replace_tests_with_top(tree: SANode) -> SANode:
     for child in tree.children:
         if type(child) == SANode and child.op == Op.TEST:
             new_children.append(SANode(Op.TOP, []))
-        elif type(child) == SANode: # and not child.op == Op.TEST
+        elif type(child) == SANode:  # and not child.op == Op.TEST
             new_children.append(_replace_tests_with_top(child))
         else:
             new_children.append(child)
@@ -129,7 +131,7 @@ def _optimize_ignoring_tests(tree: SANode) -> SANode:
         # handle multiple TOP
         if any(map(lambda c: c.op == Op.TOP, tree.children)):
             new_children = list(filter(lambda c: c.op != Op.TOP, tree.children))
-            if len(new_children) == 0: # they were all TOP
+            if len(new_children) == 0:  # they were all TOP
                 return SANode(Op.TOP, [])
             # they were not all TOP, but we need one to keep conformance semantics
             new_children.append(SANode(Op.TOP, []))
@@ -139,6 +141,43 @@ def _optimize_ignoring_tests(tree: SANode) -> SANode:
         if tree.children[0].op == Op.NOT and \
                 tree.children[0].children[0].op == Op.TOP:
             return SANode(Op.TOP, [])
+
+    return tree
+
+
+def _optimize_exactly1(tree: SANode) -> SANode:
+    new_children = []
+    for child in tree.children:
+        if type(child) == SANode:
+            new_children.append(
+                _optimize_exactly1(child))
+        else:
+            new_children.append(child)
+
+    tree = SANode(tree.op, new_children)
+
+    if tree.op == Op.AND:
+        # Optimization: if there is a GEQ 1 E TOP and LEQ 1 E TOP in its children, replace both with EXACTLY 1
+        is_geq_one_top = lambda c: c.op == Op.GEQ and \
+                                int(c.children[0]) == 1 and \
+                                c.children[2].op == Op.TOP
+        is_leq_one_top = lambda c: c.op == Op.LEQ and \
+                                int(c.children[0]) == 1 and \
+                                c.children[2].op == Op.TOP
+        if any(map(is_geq_one_top, tree.children)) and \
+                any(map(is_leq_one_top, tree.children)):
+            geq_one_tops = list(filter(is_geq_one_top, tree.children))
+            leq_one_tops = list(filter(is_leq_one_top, tree.children))
+            new_children = tree.children.copy()
+
+            for geq_one in geq_one_tops:
+                for leq_one in leq_one_tops:
+                    if geq_one.children[1] == leq_one.children[1]:
+                        new_children.append(SANode(Op.EXACTLY1, [geq_one.children[1]]))
+                        new_children.remove(geq_one)
+                        new_children.remove(leq_one)
+
+            return SANode(Op.AND, new_children)
 
     return tree
 
@@ -193,13 +232,15 @@ def _cmd_frag():
     #    - replace disjunction with only TOPs with TOP
     #    - replace conjunctions with == 0 children with TOP
     #    - replace conjunctions with == 1 child with the child
+    #    - search and replace "exactly one pattern"
     if ignore_tests:
-        _it_prepared_shapes = []
+        _eo_prepared_shapes = []
         for shape in prepared_shapes:
             _tt_shape = _replace_tests_with_top(shape)
             _it_shape = _optimize_ignoring_tests(_tt_shape)
-            _it_prepared_shapes.append(_it_shape)
-        prepared_shapes = _it_prepared_shapes
+            _eo_shape = _optimize_exactly1(_it_shape)
+            _eo_prepared_shapes.append(_eo_shape)
+        prepared_shapes = _eo_prepared_shapes
 
     # translate every shape to a shape fragment query
     shape_queries = []
@@ -230,7 +271,6 @@ def _cmd_bvg():
     if shapename not in definitions:
         print(f'Shape {shapename} is not defined in {filename}')
         exit(1)
-
 
     print(to_sfquery(algebra.optimize_tree(algebra.negation_normal_form(
         algebra.expand_shape(definitions, definitions[shapename])))))
@@ -300,7 +340,7 @@ def _cmd_info():
 
     print('Defined prefixes:')
     for prefix, uri in shapesgraph.namespace_manager.namespaces():
-        print(f'{prefix}{" "*(16-len(prefix))}{uri}')
+        print(f'{prefix}{" " * (16 - len(prefix))}{uri}')
 
     shapes_with_target = []
     shapes_rest = []
@@ -328,7 +368,7 @@ if __name__ == '__main__':
 
     # if only a file name or frag
     if argc == 2 or ('--frag' in sys.argv and 3 <= argc <= 4):
-         _cmd_frag()
+        _cmd_frag()
     elif '--bvg' in sys.argv and argc == 4:
         _cmd_bvg()
     elif '--parser' in sys.argv and 4 <= argc <= 5:

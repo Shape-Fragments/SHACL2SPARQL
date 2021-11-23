@@ -27,6 +27,12 @@ class Op(Enum):
     LESSTHANEQ = auto()
     UNIQUELANG = auto()
     TOP = auto()
+    EXACTLY1 = auto()
+    '''
+    exactly one is an optimization operator: mincount 1 and maxcount 1 --> exactly 1
+    
+    TODO: can be generalized later
+    '''
 
 
 class SANode:  # Shape Algebra Node

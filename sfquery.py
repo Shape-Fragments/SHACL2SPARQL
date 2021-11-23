@@ -212,6 +212,16 @@ WHERE {{
 {{ {{ {qe} }} UNION {{ {qp} }} }} }}
 '''
 
+    # Optimization
+    if node.op == Op.EXACTLY1:
+        qe = graph_paths(node.children[0])
+        return f'''
+        SELECT (?t AS ?v) ?s ?p ?o
+        WHERE {{
+            {{ SELECT (?v AS ?t) WHERE {{ {cqp} }} }} .
+            {{ {qe} }} 
+        }}'''
+
     if node.op == Op.NOT:
         child = node.children[0]
         if child.op == Op.CLOSED:
