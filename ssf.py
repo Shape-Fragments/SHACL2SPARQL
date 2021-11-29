@@ -114,6 +114,7 @@ def _optimize_ignoring_tests(tree: SANode) -> SANode:
                 return SANode(Op.TOP, [])
             elif len(new_children) == 1:
                 return new_children[0]
+            return SANode(Op.AND, new_children)
 
         # handle NOT TOP children
         if any(map(lambda c: c.op == Op.NOT and c.children[0].op == Op.TOP, tree.children)):
@@ -127,6 +128,7 @@ def _optimize_ignoring_tests(tree: SANode) -> SANode:
                 return SANode(Op.NOT, [SANode(Op.TOP, [])])
             elif len(new_children) == 1:
                 return new_children[0]
+            return SANode(Op.OR, new_children)
 
         # handle multiple TOP
         if any(map(lambda c: c.op == Op.TOP, tree.children)):
@@ -168,16 +170,15 @@ def _optimize_exactly1(tree: SANode) -> SANode:
                 any(map(is_leq_one_top, tree.children)):
             geq_one_tops = list(filter(is_geq_one_top, tree.children))
             leq_one_tops = list(filter(is_leq_one_top, tree.children))
-            new_children = tree.children.copy()
 
             for geq_one in geq_one_tops:
                 for leq_one in leq_one_tops:
                     if geq_one.children[1] == leq_one.children[1]:
-                        new_children.append(SANode(Op.EXACTLY1, [geq_one.children[1]]))
-                        new_children.remove(geq_one)
-                        new_children.remove(leq_one)
+                        tree.children.append(SANode(Op.EXACTLY1, [geq_one.children[1]]))
+                        tree.children.remove(geq_one)
+                        tree.children.remove(leq_one)
 
-            return SANode(Op.AND, new_children)
+            return SANode(Op.AND, tree.children)
 
     return tree
 

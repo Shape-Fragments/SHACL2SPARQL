@@ -51,7 +51,7 @@ class SANode:  # Shape Algebra Node
                 continue
             same_children = same_children and child_self == child_other
 
-        return self.op == other.op and same_children
+        return (self.op == other.op) and same_children
 
     def __repr__(self):
         """ Pretty representation of the SANode tree """
