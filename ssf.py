@@ -177,6 +177,7 @@ def _optimize_exactly1(tree: SANode) -> SANode:
                         tree.children.append(SANode(Op.EXACTLY1, [geq_one.children[1]]))
                         tree.children.remove(geq_one)
                         tree.children.remove(leq_one)
+                        break
 
             return SANode(Op.AND, tree.children)
 
