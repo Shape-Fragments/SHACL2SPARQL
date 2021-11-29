@@ -94,6 +94,10 @@ def _build_geq_query(num, path, shape):
     ''') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
 
+def _build_geq1_top_query(path):
+    return _build_query(f'?v {path} ?o')
+
+
 def _build_geq_top_query(num, path):
     return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
@@ -354,6 +358,11 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
 
     if node.op == Op.GEQ:
         path = to_path(node.children[1])
+
+        # Optimization
+        if int(node.children[0]) == 1 and node.children[2].op == Op.TOP:
+            return _build_geq1_top_query(path)
+
         # Optimization
         if node.children[2].op == Op.TOP or \
                 node.children[2].op == Op.TEST and ignore_tests:
