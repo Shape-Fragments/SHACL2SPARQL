@@ -98,6 +98,16 @@ def _build_geq1_top_query(path):
     return _build_query(f'?v {path} ?o')
 
 
+def _build_geq1_query(path, shape):
+    return _build_query(f'''
+    ?v {path} ?o .
+    {{ SELECT (?v AS ?o) WHERE {{ {shape} }} }}''')
+
+
+def _build_geq1_hasvalue_query(path, value):
+    return _build_query(f'?v {path} <{str(value)}>')
+
+
 def _build_geq_top_query(num, path):
     return _build_query(f'?v {path} ?o') + f' GROUP BY ?v HAVING (COUNT(?o) >= {str(num)} )'
 
@@ -360,8 +370,12 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
         path = to_path(node.children[1])
 
         # Optimization
-        if int(node.children[0]) == 1 and node.children[2].op == Op.TOP:
-            return _build_geq1_top_query(path)
+        if int(node.children[0]) == 1:
+            if node.children[2].op == Op.TOP:
+                return _build_geq1_top_query(path)
+            elif node.children[2].op == Op.HASVALUE:
+                return _build_geq1_hasvalue_query(path, node.children[2].children[0])
+            return _build_geq1_query(path)
 
         # Optimization
         if node.children[2].op == Op.TOP or \
