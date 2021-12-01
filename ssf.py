@@ -11,7 +11,7 @@ from sfquery import to_sfquery
 '''
 ssf stands for Sparql Shape Fragments
 
-TODO: cleanup cmd argument parsing, it is very naive atm
+TODO: cleanup cmd argument parsing
 '''
 
 
@@ -190,20 +190,6 @@ def _cmd_frag():
 
     ignore_tests = '-i' in sys.argv  # if -i is in the options, ignore tests
 
-    # If you ignore tests at parse time, we get a non-intuitive definition of shape neighborhoods
-    # if the parser encounters shapes like for example:
-    # :exampleshape a sh:nodeshape;
-    #   sh:propertyshape [
-    #     sh:path :email ].
-    # (this would occur if there would have been a test on all emails, but it is ignored by the
-    #  parser so it effectively sees the shape above)
-    # then it would translate it to: forall email. TOP
-    # and at parse time, this is indistinguishable from a parsing artifact from the way
-    # we translate from RDF shacl to the algebra. Therefore, it is removed from the parse tree.
-    # There would be no neighborhood for emails, eventhough there would be one if forall email.TOP
-    # is retained in the shape.
-    # TODO: when you actually write a shape like the above, it would be removed at parse time.
-    # The task is to not remove it and retain precisely what we want for the shape fragment
     definitions, targets = algebra.parse(shapesgraph, ignore_tests=False)
 
     # expand every shape that is defined in the schema
