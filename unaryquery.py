@@ -375,7 +375,7 @@ def to_uq(node: SANode, ignore_tests=False) -> str:
                 return _build_geq1_top_query(path)
             elif node.children[2].op == Op.HASVALUE:
                 return _build_geq1_hasvalue_query(path, node.children[2].children[0])
-            return _build_geq1_query(path)
+            return _build_geq1_query(path, node.children[2])
 
         # Optimization
         if node.children[2].op == Op.TOP or \
