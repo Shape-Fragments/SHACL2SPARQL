@@ -1,3 +1,8 @@
+# This project has been replaced
+This project will slowly be replaced by an updated version, found [here](https://github.com/MaximeJakubowski/ssf_project).
+
+Originally this project was written in function of [our paper](https://openproceedings.org/2023/conf/edbt/paper-3.pdf). However, because of significant improvements in the [logical syntax parser](https://github.com/MaximeJakubowski/sls_project), this project is in the process of being rewritten with the improved parser. This new project will therefore also be the continuation of the SPARQL Shape Fragment implementation.
+
 # SHACL to SPARQL
 The main goal of this project is to translate SHACL shapes to corresponding SPARQL queries according to the shape fragments specification.
 
